@@ -1,0 +1,11 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { CalendarDays, Clock3, MapPin, UsersRound } from "lucide-react";
+import { getEvent } from "@/lib/events/data";
+
+export default async function EventDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params; const event = await getEvent(id); if (!event) notFound();
+  const start = new Date(event.starts_at); const end = new Date(event.ends_at);
+  return <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8"><Link href="/events" className="text-sm font-semibold text-blue-700 hover:underline">← All events</Link><div className="mt-6 overflow-hidden rounded-3xl border border-slate-200 bg-white"><div className="flex min-h-52 items-end bg-blue-50 p-7 sm:min-h-64 sm:p-10"><div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 text-white"><CalendarDays size={30}/></div></div><div className="grid gap-8 p-6 sm:p-10 md:grid-cols-[1fr_270px]"><div><p className="text-sm font-semibold text-blue-700">{event.society} · {event.category}</p><h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{event.title}</h1><p className="mt-6 whitespace-pre-line text-base leading-8 text-slate-600">{event.description}</p></div><aside className="h-fit rounded-2xl bg-slate-50 p-5"><h2 className="font-bold">Event details</h2><div className="mt-5 space-y-4 text-sm text-slate-600"><div className="flex gap-3"><CalendarDays size={18} className="shrink-0 text-blue-700"/><span>{start.toLocaleDateString("en-PK", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Karachi" })}</span></div><div className="flex gap-3"><Clock3 size={18} className="shrink-0 text-blue-700"/><span>{start.toLocaleTimeString("en-PK", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Karachi" })} – {end.toLocaleTimeString("en-PK", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Karachi" })} PKT</span></div><div className="flex gap-3"><MapPin size={18} className="shrink-0 text-blue-700"/><span>{event.venue}</span></div><div className="flex gap-3"><UsersRound size={18} className="shrink-0 text-blue-700"/><span>Open to IBA students</span></div></div></aside></div></div></div>;
+}
+

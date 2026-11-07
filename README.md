@@ -21,12 +21,17 @@ Fill `.env.local` with your Supabase Project URL, publishable key, and secret ke
 
 ### 2. Finish the database migrations
 
-You said you already ran `202611020001_sprint1_schema.sql`. Now run these four files in Supabase Dashboard ? SQL Editor, as separate queries and in order:
+You said you already ran `202611020001_sprint1_schema.sql`. Now run these five files in Supabase Dashboard ? SQL Editor, as separate queries and in order:
 
 1. `supabase/migrations/202611020002_developer_account_type.sql` — run this file by itself and wait for it to finish/commit.
 2. `supabase/migrations/202611020003_developer_profile_constraint.sql`.
 3. `supabase/migrations/202611020004_developer_auth_allowlist.sql`.
 4. `supabase/migrations/202611020005_society_single_admin_role.sql`.
+5. `supabase/migrations/202611080001_wireframe_event_rules.sql`.
+
+The fifth migration adds event price and participation mode, makes society and event reads sign-in only, enforces event edit locks and faculty patron integrity, and adds atomic society creation with a patron. Review any existing societies without a patron and assign one manually before applying it.
+
+The last migration adds event price and participation mode, changes event and society reads to signed-in users, enforces patron assignment and approval-state edit locks, and adds the atomic society-with-patron creation function. Do not run it against a production database until reviewing and assigning faculty patrons to any legacy societies without one.
 
 The first migration adds the new enum value. It must commit before the next migration can use it in the profile constraint; do not combine these queries into one transaction. The third migration lets the five named developer emails authenticate and marks their profiles as developer accounts. The seed script grants them the `super_admin` role. The fixed OSSIE account is a separate `office` role. The fifth migration normalizes society student assignments to the single Society admin role; patrons remain in their own table.
 

@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { ArrowRight, CalendarCheck, CheckCircle2, Compass, ShieldCheck, Sparkles } from "lucide-react";
-import { getPublishedEvents } from "@/lib/events/data";
+import { getUpcomingPublishedEvents } from "@/lib/events/data";
 import { EventCard } from "@/components/event-card";
 
 export default async function LandingPage() {
-  const events = (await getPublishedEvents()).slice(0, 3);
+  const { events: availableEvents } = await getUpcomingPublishedEvents();
+  const events = availableEvents.slice(0, 3);
   const features = [
     { Icon: Compass, title: "Discover", copy: "Browse upcoming events from IBA societies." },
     { Icon: ShieldCheck, title: "Reviewed", copy: "Events are checked by society patrons and OSSIE." },

@@ -16,9 +16,15 @@ export async function getUpcomingPublishedEvents(): Promise<EventQueryResult> {
 export async function getEvent(id: string): Promise<EventItem | null> {
   if (!configured()) return demoEvents.find(event => event.id === id) ?? null;
   const supabase = await createClient();
-  const { data } = await supabase.from("events").select("*, societies(name)").eq("id", id).eq("status", "published").gt("ends_at", new Date().toISOString()).maybeSingle();
+  const { data } = await supabase.from("events").select("*, societies(name)").eq("id", id).eq("status", "published").maybeSingle();
   if (!data) return null;
   const event = data as unknown as EventItem & { societies?: { name: string } | null };
+  if (new Date(event.ends_at) <= new Date()) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const { data: profile } = await supabase.from("profiles").select("account_type,global_role").eq("id", user.id).maybeSingle();
+    if (!profile || (profile.account_type === "student" && !["office", "super_admin"].includes(profile.global_role))) return null;
+  }
   return { ...event, society: event.societies?.name ?? "IBA Society" };
 }
 

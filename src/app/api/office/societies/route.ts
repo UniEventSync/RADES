@@ -3,7 +3,12 @@ import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
-const inputSchema = z.object({ name: z.string().trim().min(2).max(100), description: z.string().trim().max(2000).default(""), contactEmail: z.string().email().optional().or(z.literal("")), slug: z.string().trim().min(2).max(100).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/) });
+const societyFields = {
+  name: z.string().trim().min(2).max(100),
+  description: z.string().trim().max(2000).default(""),
+  contactEmail: z.string().trim().email().optional().or(z.literal("")),
+  slug: z.string().trim().min(2).max(100).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+};
 const admin = () => createSupabaseAdmin(process.env.NEXT_PUBLIC_SUPABASE_URL!, (process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY)!, { auth: { autoRefreshToken: false, persistSession: false } });
 async function officeUser() {
   const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser(); if (!user) return null;
@@ -12,14 +17,38 @@ async function officeUser() {
 }
 export async function GET() {
   const auth = await officeUser(); if (!auth) return NextResponse.json({ error: "OSSIE access required." }, { status: 403 });
-  const { data, error } = await admin().from("societies").select("*, society_members(id,user_id,role,status,profiles(email,first_name,last_name)), society_patrons(id,user_id,profiles(email,first_name,last_name))").order("name");
+  const { data, error } = await admin().from("societies").select("*, society_members(id,user_id,role,status,profiles!society_members_user_id_fkey(email,first_name,last_name)), society_patrons(id,user_id,profiles!society_patrons_user_id_fkey(email,first_name,last_name))").order("name");
   if (error) return NextResponse.json({ error: error.message }, { status: 400 }); return NextResponse.json({ societies: data });
+}
+
+export async function PATCH(request: Request) {
+  const auth = await officeUser(); if (!auth) return NextResponse.json({ error: "OSSIE access required." }, { status: 403 });
+  const parsed = z.object({ societyId: z.string().uuid(), ...societyFields, isActive: z.boolean() }).safeParse(await request.json());
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
+  const { societyId, name, description, slug, contactEmail, isActive } = parsed.data;
+  const { data, error } = await auth.supabase.from("societies").update({ name, description, slug, contact_email: contactEmail || null, is_active: isActive }).eq("id", societyId).select("id,name,slug,description,contact_email,is_active").maybeSingle();
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (!data) return NextResponse.json({ error: "Society not found." }, { status: 404 });
+  return NextResponse.json({ society: data });
 }
 export async function POST(request: Request) {
   const auth = await officeUser(); if (!auth) return NextResponse.json({ error: "OSSIE access required." }, { status: 403 });
-  const input = inputSchema.safeParse(await request.json()); if (!input.success) return NextResponse.json({ error: input.error.issues[0]?.message }, { status: 400 });
-  const { data, error } = await auth.supabase.from("societies").insert({ name: input.data.name, slug: input.data.slug, description: input.data.description, contact_email: input.data.contactEmail || null, created_by: auth.user.id }).select("id,name,slug").single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 }); return NextResponse.json({ society: data }, { status: 201 });
+  const input = z.object({ ...societyFields, patronEmail: z.string().trim().email() }).safeParse(await request.json()); if (!input.success) return NextResponse.json({ error: input.error.issues[0]?.message }, { status: 400 });
+  const patronEmail = input.data.patronEmail.toLowerCase();
+  if (!/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*@iba\.edu\.pk$/i.test(patronEmail)) return NextResponse.json({ error: "Societies need a faculty patron with an IBA faculty email." }, { status: 400 });
+  const adminClient = admin();
+  const { data: profile, error: profileError } = await adminClient.from("profiles").select("id,account_type").eq("email",patronEmail).maybeSingle();
+  if (profileError) return NextResponse.json({ error: profileError.message }, { status: 400 });
+  let patronId = profile?.id;
+  if (profile && profile.account_type !== "faculty") return NextResponse.json({ error: "The society patron must have a faculty account." }, { status: 400 });
+  if (!patronId) {
+    const { data: invited, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(patronEmail,{redirectTo:`${process.env.NEXT_PUBLIC_APP_URL??"http://localhost:3000"}/auth/callback`});
+    if (inviteError) return NextResponse.json({ error: inviteError.message }, { status: 400 });
+    patronId=invited.user.id;
+  }
+  const { data, error } = await auth.supabase.rpc("create_society_with_patron",{society_name:input.data.name,society_slug:input.data.slug,society_description:input.data.description,society_contact_email:input.data.contactEmail||null,patron_profile_id:patronId});
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json({ society: data }, { status: 201 });
 }
 
 export async function PUT(request: Request) {

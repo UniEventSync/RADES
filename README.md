@@ -1,10 +1,10 @@
 # RADES · Sprint 1
 
-RADES is IBA Karachi's campus event portal. Sprint 1 includes email/password authentication, student and faculty profiles, OSSIE-managed society profiles, up to three student society admins per society, patrons, event creation/editing, two-stage approval, and event browsing/details. Event registration, payments, attendance, analytics, and calendar integrations are Sprint 2.
+RADES is IBA Karachi's campus event portal. The current sprint includes event search, filtering and sorting, society profile updates, society-level analytics for panelists, and all-society event analytics for OSSIE. Existing functionality includes email/password authentication, student and faculty profiles, OSSIE-managed society setup, up to three student society admins per society, patrons, event creation/editing, two-stage approval, and event browsing/details. Registration, payments, attendance, and calendar integrations remain out of scope; the current database has no registration or check-in records for attendance or revenue analytics.
 
 ## What Supabase does here
 
-Supabase is the backend as a service for this app, not just its database. Supabase Auth handles user accounts, password sign-in, sessions, confirmation links, recovery OTPs, and invitations. Supabase Postgres stores profiles, societies, assignments, and events; database triggers enforce role/profile rules, and row-level security controls what each role can read or change. Server-side Supabase Admin operations invite users and bootstrap privileged accounts. Supabase Storage is not needed in this sprint.
+Supabase is the backend as a service for this app, not just its database. Supabase Auth handles user accounts, password sign-in, sessions, confirmation links, recovery OTPs, and invitations. Supabase Postgres stores profiles, societies, assignments, and events; database triggers enforce role/profile rules, and row-level security controls what each role can read or change. Server-side Supabase Admin operations invite users and bootstrap privileged accounts. Supabase Storage stores public society logos and event banners in the `rades-media` bucket.
 
 ## Setup after creating your Supabase project
 
@@ -21,19 +21,20 @@ Fill `.env.local` with your Supabase Project URL, publishable key, and secret ke
 
 ### 2. Finish the database migrations
 
-You said you already ran `202611020001_sprint1_schema.sql`. Now run these five files in Supabase Dashboard ? SQL Editor, as separate queries and in order:
+The migration files are listed below in application order. Before running one in Supabase Dashboard → SQL Editor, check [`supabase/MIGRATION_STATUS.md`](supabase/MIGRATION_STATUS.md) and verify that the migration has not already been applied. Manually running SQL does not update this repository automatically.
 
 1. `supabase/migrations/202611020002_developer_account_type.sql` — run this file by itself and wait for it to finish/commit.
 2. `supabase/migrations/202611020003_developer_profile_constraint.sql`.
 3. `supabase/migrations/202611020004_developer_auth_allowlist.sql`.
 4. `supabase/migrations/202611020005_society_single_admin_role.sql`.
 5. `supabase/migrations/202611080001_wireframe_event_rules.sql`.
+6. `supabase/migrations/202611080002_society_profiles.sql`.
+7. `supabase/migrations/202611080003_public_event_browsing.sql`.
+8. `supabase/migrations/202611090001_public_media_analytics_cancellation.sql`.
 
-The fifth migration adds event price and participation mode, makes society and event reads sign-in only, enforces event edit locks and faculty patron integrity, and adds atomic society creation with a patron. Review any existing societies without a patron and assign one manually before applying it.
+The event-rules migration adds event price and participation mode, enforces event edit locks and faculty patron integrity, and adds atomic society creation with a patron. Review any existing societies without a patron and assign one manually before applying it. The society-profiles migration lets active society panelists update public profile fields while preserving OSSIE control of society availability. The public-event-browsing migration allows signed-out visitors to read active society profiles and upcoming published events; drafts, review states, and past events remain unavailable to anonymous visitors. The 9 November migration adds society social links, a public storage bucket and scoped upload policies, event cancellation metadata, a demo refund ledger, and the logo/social fields used by OSSIE's society-creation RPC. It must be applied before using those new UI paths.
 
-The last migration adds event price and participation mode, changes event and society reads to signed-in users, enforces patron assignment and approval-state edit locks, and adds the atomic society-with-patron creation function. Do not run it against a production database until reviewing and assigning faculty patrons to any legacy societies without one.
-
-The first migration adds the new enum value. It must commit before the next migration can use it in the profile constraint; do not combine these queries into one transaction. The third migration lets the five named developer emails authenticate and marks their profiles as developer accounts. The seed script grants them the `super_admin` role. The fixed OSSIE account is a separate `office` role. The fifth migration normalizes society student assignments to the single Society admin role; patrons remain in their own table.
+The developer account type migration adds a new enum value. It must commit before the profile constraint migration can use it; do not combine these queries into one transaction. The developer auth allowlist migration lets the five named developer emails authenticate and marks their profiles as developer accounts. The seed script grants them the `super_admin` role. The fixed OSSIE account is a separate `office` role. The society role migration normalizes student assignments to the single Society admin role; patrons remain in their own table.
 
 ### 3. Configure Supabase Auth and Resend email
 
@@ -62,6 +63,8 @@ In Authentication ? Email Templates, set:
 - Invite user: contents from `supabase/email-templates/invite-user.html`. Society admin and patron invitations use a link.
 
 OTP is used only for forgot-password recovery. Account signup uses a confirmation email link. There is no OTP step for normal sign-in.
+
+For a linked Supabase project, update Authentication ? Email Templates ? Reset Password to the contents of `supabase/email-templates/reset-password.html`; the template must include `{{ .Token }}` for the six-digit code. The local `supabase/config.toml` points at this template, but pushing the app migration does not update hosted Auth templates or SMTP settings. Recovery code delivery still depends on a configured SMTP sender that is permitted to send to the recipient's address.
 ### 4. Create the OSSIE and developer accounts
 
 In `.env.local`, set `OSSIE_PASSWORD` to a strong unique password, then run:
@@ -87,7 +90,7 @@ Set `DEVELOPER_PASSWORD` in `.env.local` to the shared development password you 
 npm run dev
 ```
 
-Open `http://localhost:3000`. Students and faculty can sign up with their IBA email addresses and confirm through the link they receive. Test forgot-password from the sign-in page; that flow sends the six-digit code for entry on the website. Students can browse events. Society admins create/edit events, patrons review/approve their society's events first, then OSSIE reviews/approves. OSSIE also creates societies and assigns society admins and patrons. Superadmins can use OSSIE workspace for development and monitoring.
+Open `http://localhost:3000` for the public landing page. `/home` redirects there; authenticated workspaces are at `/dashboard`. Students and faculty can sign up with their IBA email addresses and confirm through the link they receive. Test forgot-password from the sign-in page; that flow sends the six-digit code for entry on the website. Society admins can use `/admin` for their assigned society's events. OSSIE manages societies and assignments from `/dashboard` and can view campus-wide analytics. Patrons review/approve their society's events first, then OSSIE reviews/approves. Society and event analytics show record fields and event metrics available today; registration, check-in, and revenue metrics need the registration/payment features first.
 
 The site header, sign-in form, and browser icon use `public/Icon.png`.
 

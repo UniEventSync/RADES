@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { isUploadedMediaUrl } from "@/lib/storage/media";
 
 const societyFields = {
   name: z.string().trim().min(2).max(100),
@@ -33,7 +34,8 @@ export async function PATCH(request: Request) {
 }
 export async function POST(request: Request) {
   const auth = await officeUser(); if (!auth) return NextResponse.json({ error: "OSSIE access required." }, { status: 403 });
-  const input = z.object({ ...societyFields, patronEmail: z.string().trim().email() }).safeParse(await request.json()); if (!input.success) return NextResponse.json({ error: input.error.issues[0]?.message }, { status: 400 });
+  const social=z.string().url().refine(value=>/^https?:\/\//i.test(value)).optional().or(z.literal(""));
+  const input = z.object({ ...societyFields, patronEmail: z.string().trim().email(), logoUrl:z.string().url().refine(isUploadedMediaUrl).optional().or(z.literal("")),facebookUrl:social,linkedinUrl:social,instagramUrl:social }).safeParse(await request.json()); if (!input.success) return NextResponse.json({ error: input.error.issues[0]?.message }, { status: 400 });
   const patronEmail = input.data.patronEmail.toLowerCase();
   if (!/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*@iba\.edu\.pk$/i.test(patronEmail)) return NextResponse.json({ error: "Societies need a faculty patron with an IBA faculty email." }, { status: 400 });
   const adminClient = admin();
@@ -46,7 +48,7 @@ export async function POST(request: Request) {
     if (inviteError) return NextResponse.json({ error: inviteError.message }, { status: 400 });
     patronId=invited.user.id;
   }
-  const { data, error } = await auth.supabase.rpc("create_society_with_patron",{society_name:input.data.name,society_slug:input.data.slug,society_description:input.data.description,society_contact_email:input.data.contactEmail||null,patron_profile_id:patronId});
+  const { data, error } = await auth.supabase.rpc("create_society_with_patron",{society_name:input.data.name,society_slug:input.data.slug,society_description:input.data.description,society_contact_email:input.data.contactEmail||null,patron_profile_id:patronId,society_logo_url:input.data.logoUrl||null,society_facebook_url:input.data.facebookUrl||null,society_linkedin_url:input.data.linkedinUrl||null,society_instagram_url:input.data.instagramUrl||null});
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ society: data }, { status: 201 });
 }

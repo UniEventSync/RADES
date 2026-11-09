@@ -1,2 +1,2 @@
 import { redirect } from "next/navigation";
-export default function OfficePage(){redirect("/home");}
+export default function OfficePage(){redirect("/dashboard");}

@@ -29,7 +29,7 @@ export function AuthForm({ mode, initialEmail = "", nextPath }: { mode: Mode; in
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return "/events";
     const { data: profile } = await supabase.from("profiles").select("account_type,global_role").eq("id", user.id).maybeSingle();
-    if (profile?.global_role === "office" || profile?.global_role === "super_admin" || profile?.account_type === "faculty" || profile?.account_type === "developer") return "/home";
+    if (profile?.global_role === "office" || profile?.global_role === "super_admin" || profile?.account_type === "faculty" || profile?.account_type === "developer") return "/dashboard";
     const { data: memberships } = await supabase.from("society_members").select("id").eq("user_id", user.id).eq("status", "active").limit(1);
     return memberships?.length ? "/admin" : "/events";
   };

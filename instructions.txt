@@ -1602,3 +1602,10 @@ List everything done here. After each task completion update this list.
    admin (student panelist). The OSSIE assignment form and API expose only those
    choices; database migration 202611020005 normalizes older student role values
    and enforces the single student assignment type.
+
+6. Society administration navigation aligned with wireframes 4.2 and 4.3: the
+   society dashboard places Switch Portal in its header, and signed-in panelists
+   can return to their society workspace from the student-facing navigation or
+   My Home. Event creation and editing use dedicated admin routes, and successful
+   saves return to the selected society dashboard instead of rendering an inline
+   form in the student-facing dashboard.

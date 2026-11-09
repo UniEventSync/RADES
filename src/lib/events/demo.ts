@@ -4,7 +4,9 @@ export type EventItem = {
   capacity?: number | null;
   price_pkr?: number;
   registration_type?: "solo" | "team";
+  society_slug?: string;
   society_id?: string; created_by?: string;
+  image_url?: string | null; society_logo_url?: string | null;
 };
 
 export const demoEvents: EventItem[] = [

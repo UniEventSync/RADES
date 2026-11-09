@@ -4,8 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendTrackedEmail } from "@/lib/email/tracked-send";
 import { emailTemplates } from "@/lib/email/templates";
+import { isUploadedMediaUrl } from "@/lib/storage/media";
 
-const eventInput = z.object({ societyId: z.string().uuid(), title: z.string().trim().min(3).max(150), description: z.string().trim().min(10).max(8000), category: z.string().trim().min(2).max(50), venue: z.string().trim().min(2).max(200), startsAt: z.string().datetime({ offset: true }), endsAt: z.string().datetime({ offset: true }), capacity: z.number().int().positive().nullable().optional(), pricePkr: z.number().int().min(0).default(0), registrationType: z.enum(["solo", "team"]).default("solo"), status: z.enum(["draft", "pending_patron"]).default("pending_patron") });
+const eventInput = z.object({ societyId: z.string().uuid(), title: z.string().trim().min(3).max(150), description: z.string().trim().min(10).max(8000), category: z.string().trim().min(2).max(50), venue: z.string().trim().min(2).max(200), startsAt: z.string().datetime({ offset: true }), endsAt: z.string().datetime({ offset: true }), capacity: z.number().int().positive().nullable().optional(), pricePkr: z.number().int().min(0).default(0), registrationType: z.enum(["solo", "team"]).default("solo"), imageUrl: z.string().url().refine(isUploadedMediaUrl).or(z.literal("")).optional(), status: z.enum(["draft", "pending_patron"]).default("pending_patron") });
 type PatronRow = { user_id: string; profiles: { email?: string } | null };
 
 export async function POST(request: Request) {
@@ -20,15 +21,15 @@ export async function POST(request: Request) {
   let patrons: PatronRow[] = [];
   if (input.data.status === "pending_patron") {
     const { data, error } = await createAdminClient().from("society_patrons").select("user_id,profiles!society_patrons_user_id_fkey(email)").eq("society_id", input.data.societyId);
-    if (error) return NextResponse.json({ error: "Could not check the society’s patron assignment." }, { status: 500 });
+    if (error) return NextResponse.json({ error: "Could not check the societyâ€™s patron assignment." }, { status: 500 });
     patrons = (data ?? []) as unknown as PatronRow[];
     if (!patrons.length) return NextResponse.json({ error: "This society needs an assigned faculty patron before it can submit events." }, { status: 400 });
   }
-  const { data, error } = await supabase.from("events").insert({ society_id: input.data.societyId, title: input.data.title, description: input.data.description, category: input.data.category, venue: input.data.venue, starts_at: input.data.startsAt, ends_at: input.data.endsAt, capacity: input.data.capacity ?? null, price_pkr: input.data.pricePkr, registration_type: input.data.registrationType, status: input.data.status, created_by: user.id }).select("id").single();
+  const { data, error } = await supabase.from("events").insert({ society_id: input.data.societyId, title: input.data.title, description: input.data.description, category: input.data.category, venue: input.data.venue, starts_at: input.data.startsAt, ends_at: input.data.endsAt, capacity: input.data.capacity ?? null, price_pkr: input.data.pricePkr, registration_type: input.data.registrationType, image_url: input.data.imageUrl || null, status: input.data.status, created_by: user.id }).select("id").single();
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   if (input.data.status === "pending_patron") {
     const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;
-    for (const patron of patrons) { const email = patron.profiles?.email; if (email) await sendTrackedEmail({ to: email, ...emailTemplates.eventSubmitted(input.data.title, `${siteUrl}/home`) }, { userId: patron.user_id, eventId: data.id, type: "event_submitted_for_patron_review" }); }
+    for (const patron of patrons) { const email = patron.profiles?.email; if (email) await sendTrackedEmail({ to: email, ...emailTemplates.eventSubmitted(input.data.title, `${siteUrl}/dashboard`) }, { userId: patron.user_id, eventId: data.id, type: "event_submitted_for_patron_review" }); }
   }
   return NextResponse.json({ id: data.id }, { status: 201 });
 }

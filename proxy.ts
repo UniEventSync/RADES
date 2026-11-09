@@ -1,9 +1,10 @@
 import { createServerClient, type SetAllCookies } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   if (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up") || pathname.startsWith("/forgot-password") || pathname.startsWith("/reset-password") || pathname.startsWith("/verify-email") || pathname.startsWith("/auth/callback") || pathname === "/api/auth/signup") return NextResponse.next();
+  if (pathname === "/" || pathname === "/home" || pathname === "/events" || pathname.startsWith("/events/") || pathname === "/societies" || pathname.startsWith("/societies/")) return NextResponse.next();
   let response = NextResponse.next({ request });
   const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !publishableKey) {
@@ -22,7 +23,7 @@ export async function middleware(request: NextRequest) {
     const { data: profile }=await supabase.from("profiles").select("global_role").eq("id",user.id).maybeSingle();
     if(!profile||!["office","super_admin"].includes(profile.global_role)){const url=request.nextUrl.clone();url.pathname="/home";return NextResponse.redirect(url);}
   }
-  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+  if ((pathname === "/admin" || pathname.startsWith("/admin/")) && !/^\/admin\/events\/[^/]+\/(analytics|cancel)$/.test(pathname)) {
     const { data: memberships } = await supabase.from("society_members").select("id").eq("user_id", user.id).eq("status", "active").limit(1);
     if (!memberships?.length) { const url = request.nextUrl.clone(); url.pathname = "/events"; url.search = ""; return NextResponse.redirect(url); }
   }

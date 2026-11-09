@@ -17,9 +17,16 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.signUp({
       email, password: parsed.data.password,
-      options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin}/auth/callback?next=/home`, data: { first_name: parsed.data.firstName || derived?.firstName, last_name: parsed.data.lastName || derived?.lastName, account_type: accountType, erp_number: derived?.erpNumber ?? null } },
+      options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin}/auth/callback?next=/dashboard`, data: { first_name: parsed.data.firstName || derived?.firstName, last_name: parsed.data.lastName || derived?.lastName, account_type: accountType, erp_number: derived?.erpNumber ?? null } },
     });
-    if (error) return NextResponse.json({ error: error.message.includes("already registered") ? "An account already exists for this email. Sign in instead." : error.message }, { status: 400 });
+    if (error) {
+      const message = error.message.toLowerCase().includes("already registered")
+        ? "An account already exists for this email. Sign in instead."
+        : error.code === "23514" || error.code === "23503"
+          ? `The account could not be created because the database rejected its profile (${error.message}). Check the profile trigger/schema migration.`
+          : `Supabase signup failed (${error.code ?? error.status ?? "unknown"}): ${error.message}`;
+      return NextResponse.json({ error: message, code: error.code ?? null }, { status: 400 });
+    }
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch { return NextResponse.json({ error: "Authentication is not configured. Add your Supabase environment keys and try again." }, { status: 503 }); }
 }

@@ -4,8 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendTrackedEmail } from "@/lib/email/tracked-send";
 import { emailTemplates } from "@/lib/email/templates";
+import { isUploadedMediaUrl } from "@/lib/storage/media";
 
-const inputSchema = z.object({ title: z.string().trim().min(3).max(150), description: z.string().trim().min(10).max(8000), category: z.string().trim().min(2).max(50), venue: z.string().trim().min(2).max(200), startsAt: z.string().datetime({ offset: true }), endsAt: z.string().datetime({ offset: true }), capacity: z.number().int().positive().nullable(), pricePkr: z.number().int().min(0), registrationType: z.enum(["solo", "team"]), status: z.enum(["draft", "pending_patron"]) });
+const inputSchema = z.object({ title: z.string().trim().min(3).max(150), description: z.string().trim().min(10).max(8000), category: z.string().trim().min(2).max(50), venue: z.string().trim().min(2).max(200), startsAt: z.string().datetime({ offset: true }), endsAt: z.string().datetime({ offset: true }), capacity: z.number().int().positive().nullable(), pricePkr: z.number().int().min(0), registrationType: z.enum(["solo", "team"]), imageUrl: z.string().url().refine(isUploadedMediaUrl).or(z.literal("")).optional(), status: z.enum(["draft", "pending_patron"]) });
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params; const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
@@ -24,10 +25,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     patrons=(data??[]) as unknown as typeof patrons;
     if (!patrons.length) return NextResponse.json({ error: "This society needs an assigned faculty patron before an event can be submitted." }, { status: 400 });
   }
-  const { error } = await supabase.from("events").update({ title: input.data.title, description: input.data.description, category: input.data.category, venue: input.data.venue, starts_at: input.data.startsAt, ends_at: input.data.endsAt, capacity: input.data.capacity, price_pkr: input.data.pricePkr, registration_type: input.data.registrationType, status: input.data.status, rejection_reason: null }).eq("id", id);
+  const { error } = await supabase.from("events").update({ title: input.data.title, description: input.data.description, category: input.data.category, venue: input.data.venue, starts_at: input.data.startsAt, ends_at: input.data.endsAt, capacity: input.data.capacity, price_pkr: input.data.pricePkr, registration_type: input.data.registrationType, image_url: input.data.imageUrl || null, status: input.data.status, rejection_reason: null }).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 403 });
   if (resubmitting) {
-    const url=`${process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin}/home`;
+    const url=`${process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin}/dashboard`;
     for(const patron of patrons){const email=patron.profiles?.email;if(email)await sendTrackedEmail({to:email,...emailTemplates.eventSubmitted(input.data.title,url)},{userId:patron.user_id,eventId:id,type:"event_resubmitted_for_patron_review"});}
   }
   return NextResponse.json({ ok: true });

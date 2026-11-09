@@ -24,7 +24,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const { data: recipient } = await recipientQuery;
     const email = recipient?.email ?? (data === "pending_ossie" ? process.env.OSSIE_EMAIL : undefined);
     const label = data === "pending_ossie" ? "awaiting final OSSIE review" : data === "published" ? "approved and published" : "not approved";
-    if (email) await sendTrackedEmail({ to: email, ...emailTemplates.eventApproved(event.title,label,`${process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin}/home`) }, { userId: recipient?.id ?? null, eventId: id, type: `event_${data}` });
+    if (email) await sendTrackedEmail({ to: email, ...emailTemplates.eventApproved(event.title,label,`${process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin}/dashboard`) }, { userId: recipient?.id ?? null, eventId: id, type: `event_${data}` });
   } catch (notifyError) { console.error("RADES could not send review notification", notifyError); }
   return NextResponse.json({ ok: true, status: data });
 }

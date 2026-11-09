@@ -27,7 +27,7 @@ export async function PATCH(request: Request) {
   const parsed = z.object({ societyId: z.string().uuid(), ...societyFields, isActive: z.boolean() }).safeParse(await request.json());
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
   const { societyId, name, description, slug, contactEmail, isActive } = parsed.data;
-  const { data, error } = await auth.supabase.from("societies").update({ name, description, slug, contact_email: contactEmail || null, is_active: isActive }).eq("id", societyId).select("id,name,slug,description,contact_email,is_active").maybeSingle();
+  const { data, error } = await admin().from("societies").update({ name, description, slug, contact_email: contactEmail || null, is_active: isActive }).eq("id", societyId).select("id,name,slug,description,contact_email,is_active").maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   if (!data) return NextResponse.json({ error: "Society not found." }, { status: 404 });
   return NextResponse.json({ society: data });

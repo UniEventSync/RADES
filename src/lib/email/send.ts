@@ -10,7 +10,8 @@ export async function sendEmail(message: OutboundEmail) {
       const key = process.env.RESEND_API_KEY;
       if (!key) return { sent: false as const, reason: "RESEND_API_KEY is not configured." };
       const resend = new Resend(key);
-      const { data, error } = await resend.emails.send({ from: process.env.EMAIL_FROM ?? "RADES <onboarding@resend.dev>", to: message.to, subject: message.subject, html: message.html, text: message.text });
+      const recipient = process.env.EMAIL_TEST_RECIPIENT?.trim() || message.to;
+      const { data, error } = await resend.emails.send({ from: process.env.EMAIL_FROM ?? "RADES <onboarding@resend.dev>", to: recipient, subject: message.subject, html: message.html, text: message.text });
       if (error) { console.error("RADES email delivery failed", error); return { sent: false as const, reason: error.message }; }
       return { sent: true as const, id: data?.id };
     }

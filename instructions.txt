@@ -1609,3 +1609,12 @@ List everything done here. After each task completion update this list.
    My Home. Event creation and editing use dedicated admin routes, and successful
    saves return to the selected society dashboard instead of rendering an inline
    form in the student-facing dashboard.
+
+7. Society-admin event workflow and media updates completed: published and
+   pending-patron events can be edited and are returned to patron approval after
+   changes; event banner uploads use the same Supabase Storage URL flow as
+   society logos and are displayed across public cards, event details,
+   dashboards, and edit forms. Society names and slugs are protected from
+   society-admin edits, portal navigation includes the correct Home destinations,
+   the public calendar uses real published events, and Resend local testing
+   routes mail to EMAIL_TEST_RECIPIENT when a domain is not verified.

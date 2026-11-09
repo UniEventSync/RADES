@@ -27,7 +27,8 @@ export function SiteHeader() {
   const authPage = ["/sign-in", "/sign-up", "/forgot-password", "/reset-password", "/verify-email"].includes(pathname);
   const adminPage = pathname === "/admin" || pathname.startsWith("/admin/");
   const eventDetailsPage = pathname.startsWith("/events/");
-  const links = <><Link href="/societies" onClick={() => setOpen(false)}>Explore Societies</Link><Link href="/events" onClick={() => setOpen(false)}>Explore Events</Link>{email && <Link href="/dashboard" onClick={() => setOpen(false)}>Workspace</Link>}{email && hasSocietyAdminAccess && <Link href="/admin" onClick={() => setOpen(false)}>Society Workspace</Link>}{email && (role === "office" || role === "super_admin") && <Link href="/office" onClick={() => setOpen(false)}>OSSIE workspace</Link>}</>;
+  const office = role === "office" || role === "super_admin";
+  const links = <><Link href="/societies" onClick={() => setOpen(false)}>Explore Societies</Link><Link href="/events" onClick={() => setOpen(false)}>Explore Events</Link>{email && <Link href="/" onClick={() => setOpen(false)}>Home</Link>}{email && !office && !hasSocietyAdminAccess && <Link href="/dashboard" onClick={() => setOpen(false)}>Workspace</Link>}{email && hasSocietyAdminAccess && <Link href="/admin" onClick={() => setOpen(false)}>Society Workspace</Link>}{email && office && <Link href="/dashboard" onClick={() => setOpen(false)}>OSSIE workspace</Link>}</>;
   if (adminPage) return null;
   return <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
     <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8">

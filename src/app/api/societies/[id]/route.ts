@@ -5,8 +5,6 @@ import { isUploadedMediaUrl } from "@/lib/storage/media";
 
 const socialUrl = z.union([z.string().url().refine(value=>/^https?:\/\//i.test(value)),z.literal("")]).optional();
 const profileSchema = z.object({
-  name: z.string().trim().min(2).max(100),
-  slug: z.string().trim().min(2).max(100).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   description: z.string().trim().max(2000),
   contact_email: z.union([z.string().trim().email(), z.literal("")]),
   logo_url: z.union([z.string().url().refine(isUploadedMediaUrl),z.literal("")]).optional(),

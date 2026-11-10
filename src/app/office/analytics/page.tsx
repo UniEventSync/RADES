@@ -59,7 +59,7 @@ export default async function OfficeAnalyticsPage() {
   const categories = [...new Set(events.map(event => event.category))].sort();
 
   return <main className="mx-auto max-w-7xl px-5 py-8 sm:px-8">
-    <div className="flex items-center justify-between"><Link href="/dashboard" className="text-sm font-semibold text-blue-700 hover:underline">â† OSSIE workspace</Link><ThemeToggle /></div>
+    <div className="flex items-center justify-between"><Link href="/dashboard" className="text-sm font-semibold text-blue-700 hover:underline">← OSSIE workspace</Link><ThemeToggle /></div>
     <header className="mt-5"><p className="text-xs font-bold uppercase tracking-[.16em] text-blue-700">Institutional oversight</p><h1 className="mt-2 text-3xl font-bold">All-society event analytics</h1><p className="mt-2 text-sm text-slate-600">Event counts across every society. Attendance and revenue are not included because registration and check-in records are not available.</p></header>
     {error ? <p role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">Analytics could not be loaded. Try again later.</p> : <>
       <section aria-label="Campus event totals" className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">{stats.map(([label, count]) => <article key={label} className="rounded-xl border border-slate-200 bg-white p-5"><p className="text-sm text-slate-600">{label}</p><p className="mt-2 text-3xl font-bold">{count}</p></article>)}</section>

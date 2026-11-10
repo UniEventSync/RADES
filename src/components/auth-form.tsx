@@ -10,11 +10,6 @@ import { Check, Eye, EyeOff, LoaderCircle } from "lucide-react";
 type Mode = "signup" | "signin" | "forgot" | "reset" | "verify";
 const field = "mt-1.5 h-11 w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-700 focus:ring-4 focus:ring-blue-100";
 const button = "flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60";
-const safeNext = (value?: string) => {
-  if (!value?.startsWith("/")) return null;
-  try { const url = new URL(value, window.location.origin); return url.origin === window.location.origin && !url.pathname.startsWith("/auth/") ? `${url.pathname}${url.search}${url.hash}` : null; }
-  catch { return null; }
-};
 
 export function AuthForm({ mode, initialEmail = "", nextPath }: { mode: Mode; initialEmail?: string; nextPath?: string }) {
   const router = useRouter();
@@ -24,15 +19,6 @@ export function AuthForm({ mode, initialEmail = "", nextPath }: { mode: Mode; in
   const getSupabase = () => { if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) throw new Error("Authentication is not configured yet. Add your Supabase keys to .env.local."); return createClient(); };
   const setResult = (message: string) => { setError(message); setBusy(false); };
   const validateEmail = () => { const result = (mode === "signup" ? emailSchema : loginEmailSchema).safeParse(email); if (!result.success) { setResult(result.error.issues[0]?.message ?? "Enter a valid email address."); return false; } return true; };
-  const destination = async (supabase: ReturnType<typeof createClient>) => {
-    const requested = safeNext(nextPath); if (requested) return requested;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return "/events";
-    const { data: profile } = await supabase.from("profiles").select("account_type,global_role").eq("id", user.id).maybeSingle();
-    if (profile?.global_role === "office" || profile?.global_role === "super_admin" || profile?.account_type === "faculty" || profile?.account_type === "developer") return "/dashboard";
-    const { data: memberships } = await supabase.from("society_members").select("id").eq("user_id", user.id).eq("status", "active").limit(1);
-    return memberships?.length ? "/admin" : "/events";
-  };
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault(); setError(""); setNotice(""); setBusy(true);
     if (["signup", "signin", "forgot"].includes(mode) && !validateEmail()) return;
@@ -50,11 +36,13 @@ export function AuthForm({ mode, initialEmail = "", nextPath }: { mode: Mode; in
       if (mode === "signin") {
         const { error: authError } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
         if (authError) return setResult(authError.message.toLowerCase().includes("email not confirmed") ? "Please verify your email before signing in." : "Incorrect email or password.");
-        router.replace(await destination(supabase)); router.refresh(); return;
+        const returnTo = nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//") && !["/sign-in", "/sign-up", "/forgot-password", "/reset-password", "/verify-email"].some(path => nextPath.startsWith(path)) ? nextPath : "/";
+        router.replace(returnTo); router.refresh(); return;
       }
       if (mode === "forgot") {
-        const { error: authError } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: `${location.origin}/reset-password?email=${encodeURIComponent(email.trim().toLowerCase())}` });
-        if (authError) return setResult(authError.message);
+        const response = await fetch("/api/auth/forgot-password", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email.trim().toLowerCase() }) });
+        const body = await response.json();
+        if (!response.ok) return setResult(body.error ?? "Could not send the recovery code. Try again shortly.");
         setNotice("If this email is registered, a password reset code is on its way."); return;
       }
       if (mode === "verify") { setNotice("Open the confirmation link in your inbox. It will verify your email and sign you in."); setBusy(false); return; }
@@ -66,7 +54,7 @@ export function AuthForm({ mode, initialEmail = "", nextPath }: { mode: Mode; in
         if (verifyError) return setResult("That code is invalid or expired. Request a new reset code.");
         const { error: updateError } = await supabase.auth.updateUser({ password });
         if (updateError) return setResult(updateError.message);
-        setNotice("Password updated. You can now sign in with your new password.");
+        setNotice("Password updated successfully.");
       }
     } catch { setResult("Could not reach the authentication service. Check your connection and try again."); }
     setBusy(false);
@@ -95,7 +83,7 @@ export function AuthForm({ mode, initialEmail = "", nextPath }: { mode: Mode; in
       {mode === "forgot" && notice && <Link href={`/reset-password?email=${encodeURIComponent(email)}`} className="block text-center text-sm font-semibold text-blue-700">I have a code · continue</Link>}
       {mode !== "verify" && <button className={button} disabled={busy}>{busy&&<LoaderCircle className="animate-spin" size={18}/>}{{signup:"Create Account",signin:"Sign In",forgot:"Send reset code",reset:"Update Password",verify:"Verify email"}[mode]}</button>}
       {mode === "verify" && <button type="button" disabled={busy} onClick={resend} className="w-full py-2 text-sm font-semibold text-blue-700">Resend confirmation link</button>}
-      {mode === "reset" && notice && <Link className={`${button} mt-2`} href="/sign-in">Go to Sign In</Link>}
+      {mode === "reset" && notice && <Link className={`${button} mt-2`} href="/">Continue to RADES</Link>}
       <div className="border-t border-slate-100 pt-4 text-center text-sm text-slate-500">{mode === "signup" ? <>Already have an account? <Link className="font-semibold text-blue-700" href="/sign-in">Sign In</Link></> : mode === "signin" ? <>Don’t have an account? <Link className="font-semibold text-blue-700" href="/sign-up">Sign Up</Link></> : <Link className="font-semibold text-blue-700" href="/sign-in">Back to Sign In</Link>}</div>
     </form>
   </section>;

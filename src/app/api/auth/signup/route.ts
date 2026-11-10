@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { deriveStudentIdentity, emailSchema, getAccountType } from "@/lib/auth/email-rules";
 import { z } from "zod";
-
 const bodySchema = z.object({ email: z.string(), password: z.string().min(10).max(128), firstName: z.string().trim().min(1).max(60), lastName: z.string().trim().min(1).max(60) });
 export async function POST(request: Request) {
   try {
@@ -17,7 +16,7 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.signUp({
       email, password: parsed.data.password,
-      options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin}/auth/callback?next=/dashboard`, data: { first_name: parsed.data.firstName || derived?.firstName, last_name: parsed.data.lastName || derived?.lastName, account_type: accountType, erp_number: derived?.erpNumber ?? null } },
+      options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin}/auth/callback`, data: { first_name: parsed.data.firstName || derived?.firstName, last_name: parsed.data.lastName || derived?.lastName, account_type: accountType, erp_number: derived?.erpNumber ?? null } },
     });
     if (error) {
       const message = error.message.toLowerCase().includes("already registered")

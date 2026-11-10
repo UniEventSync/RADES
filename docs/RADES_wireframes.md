@@ -131,6 +131,8 @@ ASCII wireframe layouts, desktop (wide view) first, with notes on how each scree
 |  |                         |  | Seats: 45 left    | | PKR 500           | | FREE    | |
 |  | Society                 |  | [ View Details ]  | | [ View Details ]  | | [Details] | |
 |  | [ Select Society   v ]  |  +-------------------+ +-------------------+ +-----------+ |
+|  | Event date              |  |                   | |                   | |           | |
+|  | [ YYYY-MM-DD       ]    |  +-------------------+ +-------------------+ +-----------+ |
 |  |                         |  +-------------------+ +-------------------+ +-----------+ |
 |  | Registration Type       |  | [ Image ]         | | [ Image ]         | | [ Image ] | |
 |  | (o) All ( ) Free ( ) Paid|  | Debating Society  | | Entrepreneurship  | | Gaming  | |
@@ -314,7 +316,7 @@ ASCII wireframe layouts, desktop (wide view) first, with notes on how each scree
 +-----------------------------------------------------------------------------------------+
 ```
 
-### 4.2 Society Administration Dashboard (/admin/dashboard)
+### 4.2 Society Administration Dashboard (/admin)
 
 **Desktop View**
 
@@ -322,15 +324,15 @@ ASCII wireframe layouts, desktop (wide view) first, with notes on how each scree
 +-----------------------------------------------------------------------------------------+
 | RADES Admin | Computer Science Society                              [ Switch Portal v ] |
 +-----------------------------------------------------------------------------------------+
-|  NAVIGATION      | MANAGED SOCIETY EVENTS                                               |
-|  +-------------+ | [ + Create Event ]                       [ Filter: All v ]           |
+|  NAVIGATION      | COMPUTER SCIENCE SOCIETY DASHBOARD                                |
+|  +-------------+ | [ All events: 12 ] [ Upcoming: 3 ] [ Awaiting review: 2 ]          |
 |  | [x] Dashboard | +------------------------------------------------------------------+ |
-|  | [ ] Events    | | Event Title       | Date   | Type | Capacity | Status  | Action  | |
-|  | [ ] Analytics | |-------------------+--------+------+----------+---------+---------| |
-|  | [ ] Scanner   | | Hackathon 2026    | Nov 15 | Team | 155/200  | Active  | [Manage]| |
-|  | [ ] Panel     | | AI Seminar        | Dec 10 | Solo | 45/80    | Draft   | [Edit]  | |
-|  |               | | Tech Talk 2026    | Oct 10 | Solo | 100/100  | Finished| [Stats] | |
-|  | [ Settings ]  | +------------------------------------------------------------------+ |
+|  | [ ] Events    | | Upcoming Events                         [ View all events ]   | |
+|  | [ ] Analytics | | Hackathon 2026       Nov 15     Published                     | |
+|  | [ ] Scanner   | | AI Seminar            Dec 10     Published                     | |
+|  | [ ] Panel     | | Tech Talk             Dec 18     Published                     | |
+|  |               | +------------------------------------------------------------------+ |
+|  | [ Settings ]  | [ + Create Event ]                                             |
 |  +-------------+                                                                        |
 +-----------------------------------------------------------------------------------------+
 ```
@@ -424,16 +426,33 @@ ASCII wireframe layouts, desktop (wide view) first, with notes on how each scree
 | RADES Admin | Society Panel Management                                                  |
 +-----------------------------------------------------------------------------------------+
 |                                                                                         |
-|  Panel Roster                                 Add New Admin Member                      |
+|  Society Admins                              Faculty Patron                            |
 |  +-----------------------------------------+  +---------------------------------------+ |
-|  | Name            | Email        | Role   |  | Student IBA Email                     | |
-|  |-----------------+--------------+--------|  | [___________________________________] | |
-|  | Shahzaib Kazmi  | s.kazmi@...  | Head   |  |                                       | |
-|  | Duaa Naz        | d.naz@...    | Admin  |  | Select Administrative Role            | |
-|  | Rayyan Hassan   | r.hassan@... | Officer|  | [ Select Role                     v ] | |
-|  |                 |              |        |  |                                       | |
-|  |                 |              |        |  | [ Grant Admin Access ]                | |
+|  | [icon] First Last                       |  | [icon] First Last                     | |
+|  |        admin@khi.iba.edu.pk              |  |        patron@iba.edu.pk              | |
+|  |        Student society admin             |  |        Assigned faculty reviewer      | |
+|  |-----------------------------------------|  |                                       | |
+|  | [icon] First Last                       |  | Assignments are managed by OSSIE.    | |
+|  |        admin2@khi.iba.edu.pk             |  |                                       | |
 |  +-----------------------------------------+  +---------------------------------------+ |
++-----------------------------------------------------------------------------------------+
+```
+
+### 4.7 Society Events (/admin/events)
+
+The Events sidebar destination owns the society event list and status filter. The Dashboard shows a summary and upcoming schedule instead of repeating this list.
+
+```text
++-----------------------------------------------------------------------------------------+
+| RADES Society Workspace | Computer Science Society             [Switch Society v]      |
++-----------------------------------------------------------------------------------------+
+| NAVIGATION       | EVENTS                              [Status: All v] [+ Create Event]  |
+| +-------------+  | +------------------------------------------------------------------+ |
+| | [ ] Dashboard| | | Event             | Date       | Type / Capacity | Status |Actions| |
+| | [x] Events   | | | Hackathon 2026    | Nov 15     | Team · 200      | Upcoming|Stats | |
+| | [ ] Analytics| | | AI Seminar        | Dec 10     | Solo · 80       | Draft   |Edit  | |
+| | [ ] Panel    | | +------------------------------------------------------------------+ |
+| +-------------+  |                                                                  |
 +-----------------------------------------------------------------------------------------+
 ```
 
@@ -514,13 +533,24 @@ ASCII wireframe layouts, desktop (wide view) first, with notes on how each scree
 |  +-------------------+ +-------------------+ +-------------------+ +------------------+ |
 |                                                                                         |
 |  ALL SOCIETIES EVENT DIRECTORY                                                          |
-|  Filter by Society: [ All v ]   Filter Status: [ All v ]       [ Export Full Report ]   |
+|  Society: [ All v ] Status: [ All v ] Category: [ All v ] Date: [ All / Upcoming / Past ]|
 |  +------------------------------------------------------------------------------------+ |
-|  | Event Name        | Society      | Date     | Registered | Attendance Rate | Status| |
-|  |-------------------+--------------+----------+------------+-----------------+-------| |
-|  | Hackathon 2026    | CS Society   | Nov 15   | 155 / 200  | 85.1%           | Active| |
-|  | Battle of Bands   | Music Soc    | Dec 02   | 300 / 300  | --              | Active| |
-|  | Annual MUN        | Debating Soc | Dec 15   | 210 / 250  | --              | Active| |
+|  | Event Name        | Society      | Date     | Category       | Status                | |
+|  |-------------------+--------------+----------+----------------+-----------------------| |
+|  | Hackathon 2026    | CS Society   | Nov 15   | Technology     | Published / Upcoming  | |
+|  | Battle of Bands   | Music Soc    | Dec 02   | Music & Arts   | Published / Upcoming  | |
+|  | Annual MUN        | Debating Soc | Oct 15   | Culture        | Published / Finished  | |
 |  +------------------------------------------------------------------------------------+ |
 +-----------------------------------------------------------------------------------------+
 ```
+
+## Implemented Screens Without a Dedicated Wireframe
+
+This list includes screens that currently exist in the application and have no direct screen layout in this guide. Screens described above but not implemented are intentionally excluded.
+
+- Public landing page (`/`): the public home page and its featured event content.
+- Explore Societies directory (`/societies`): the society listing screen. Section 4.1 covers an individual society profile, not the directory.
+- Student dashboard (`/dashboard` for regular students): the signed-in student overview and event feed.
+- Faculty patron dashboard (`/dashboard` for patrons): assigned societies and the event review queue.
+- Society-wide analytics (`/admin/analytics`): aggregate event counts for one society. Section 4.4 covers analytics for one event.
+- Email verification confirmation (`/verify-email`): the post-registration confirmation and resend screen.

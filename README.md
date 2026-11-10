@@ -31,8 +31,16 @@ The migration files are listed below in application order. Before running one in
 6. `supabase/migrations/202611080002_society_profiles.sql`.
 7. `supabase/migrations/202611080003_public_event_browsing.sql`.
 8. `supabase/migrations/202611090001_public_media_analytics_cancellation.sql`.
+9. `supabase/migrations/202611090002_society_admin_protections.sql`.
+10. `supabase/migrations/202611090003_event_media_access.sql`.
+11. `supabase/migrations/202611100001_schedule_and_assignment_guards.sql`.
+12. `supabase/migrations/202611100002_optional_society_patron.sql`.
 
 The event-rules migration adds event price and participation mode, enforces event edit locks and faculty patron integrity, and adds atomic society creation with a patron. Review any existing societies without a patron and assign one manually before applying it. The society-profiles migration lets active society panelists update public profile fields while preserving OSSIE control of society availability. The public-event-browsing migration allows signed-out visitors to read active society profiles and upcoming published events; drafts, review states, and past events remain unavailable to anonymous visitors. The 9 November migration adds society social links, a public storage bucket and scoped upload policies, event cancellation metadata, a demo refund ledger, and the logo/social fields used by OSSIE's society-creation RPC. It must be applied before using those new UI paths.
+
+The 10 November migration prevents overlapping non-cancelled events within the same society, while allowing separate societies to use the same time. It enforces one active society-admin assignment per student, at most three active admins per society, and one patron per society and per faculty member. Review duplicate assignments before applying it; the migration stops with a descriptive error if existing rows violate those limits. It also grants signed-out visitors access to the public profile social fields.
+
+The optional-patron migration removes the old requirement that every society have a patron at creation time. OSSIE can assign a patron later. The event workflow still requires a faculty patron before an event is submitted for review. Apply it after the schedule-and-assignment migration; society creation with no patron will continue to fail until it is applied.
 
 The developer account type migration adds a new enum value. It must commit before the profile constraint migration can use it; do not combine these queries into one transaction. The developer auth allowlist migration lets the five named developer emails authenticate and marks their profiles as developer accounts. The seed script grants them the `super_admin` role. The fixed OSSIE account is a separate `office` role. The society role migration normalizes student assignments to the single Society admin role; patrons remain in their own table.
 
@@ -54,17 +62,16 @@ In Authentication ? Providers ? Email, keep email/password sign-in and email con
 
 The Resend API key is in Resend Dashboard ? API Keys. The SMTP password is that same API key. In `.env.local`, keep `EMAIL_PROVIDER=resend`, put the key in `RESEND_API_KEY` and `SMTP_PASSWORD`, and use the sender/host/user values above. Keep the key private and never commit `.env.local`.
 
-Resend provides `onboarding@resend.dev` for testing, but it is not a production sender domain. Resend's verified-domain docs say you need to add and verify a domain you own for general sending. Until you do, expect test sending restrictions: you may only be able to deliver to the email address associated with your Resend account. That means invitations, signup confirmations, and reset codes may not reach the five `@iba.edu.pk` accounts. To deliver to all developers and IBA users, RADES needs a verified sender domain you control and its DNS records configured in Resend. [Resend verified-domain docs](https://resend.com/docs/dashboard/domains/introduction).
+Resend provides `onboarding@resend.dev` for testing, but it is not a production sender domain. Resend's verified-domain docs say you need to add and verify a domain you own for general sending. Until you do, expect test sending restrictions: you may only be able to deliver to the email address associated with your Resend account. That means invitations and signup confirmations may not reach all IBA accounts. To deliver to all developers and IBA users, RADES needs a verified sender domain you control and its DNS records configured in Resend. [Resend verified-domain docs](https://resend.com/docs/dashboard/domains/introduction).
 
 In Authentication ? Email Templates, set:
 
 - Confirm signup: contents from `supabase/email-templates/confirm-signup.html`. Signup sends a confirmation link.
-- Reset password: contents from `supabase/email-templates/reset-password.html`. Password recovery sends a six-digit OTP which the user enters on the site.
 - Invite user: contents from `supabase/email-templates/invite-user.html`. Society admin and patron invitations use a link.
 
-OTP is used only for forgot-password recovery. Account signup uses a confirmation email link. There is no OTP step for normal sign-in.
+Forgot-password recovery generates a Supabase recovery OTP server-side and sends it with RADES's configured Resend/SMTP provider using the app email template. Set `EMAIL_TEST_RECIPIENT` in `.env.local` to redirect recovery messages to a development inbox; the user still enters the account email when validating the code. Account signup uses a Supabase confirmation email link. There is no OTP step for normal sign-in.
 
-For a linked Supabase project, update Authentication ? Email Templates ? Reset Password to the contents of `supabase/email-templates/reset-password.html`; the template must include `{{ .Token }}` for the six-digit code. The local `supabase/config.toml` points at this template, but pushing the app migration does not update hosted Auth templates or SMTP settings. Recovery code delivery still depends on a configured SMTP sender that is permitted to send to the recipient's address.
+Supabase Auth SMTP settings still control signup confirmations and invitations. Recovery delivery uses the server's `EMAIL_PROVIDER` configuration and requires a working Resend API key or SMTP credentials. The `EMAIL_TEST_RECIPIENT` override applies to both Resend and SMTP recovery delivery.
 ### 4. Create the OSSIE and developer accounts
 
 In `.env.local`, set `OSSIE_PASSWORD` to a strong unique password, then run:
@@ -108,6 +115,7 @@ The site header, sign-in form, and browser icon use `public/Icon.png`.
 | `EMAIL_PROVIDER` | Set to `resend` for Resend |
 | `RESEND_API_KEY` | Resend Dashboard ? API Keys; copy the same key to `SMTP_PASSWORD` |
 | `EMAIL_FROM` | App email sender, `RADES <onboarding@resend.dev>` for testing |
+| `EMAIL_TEST_RECIPIENT` | Optional development inbox that receives password recovery messages instead of the account email |
 | `SMTP_FROM_EMAIL` | `onboarding@resend.dev` for testing; production needs a verified sender domain |
 | `SMTP_HOST` | `smtp.resend.com` |
 | `SMTP_PORT` | `465` |

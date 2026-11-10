@@ -11,7 +11,15 @@ type Society = { id: string; name: string; slug: string; description: string; lo
 export default async function SocietyProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const supabase = await createClient();
-  const { data: society } = await supabase.from("societies").select("id,name,slug,description,logo_url,contact_email,facebook_url,linkedin_url,instagram_url").eq("slug", slug).eq("is_active", true).maybeSingle();
+  let { data: society, error: societyError } = await supabase.from("societies").select("id,name,slug,description,logo_url,contact_email,facebook_url,linkedin_url,instagram_url").eq("slug", slug).eq("is_active", true).maybeSingle();
+  if (societyError) {
+    // Fall back to the original public profile columns if optional social fields
+    // have not been added to a linked database yet.
+    const fallback = await supabase.from("societies").select("id,name,slug,description,logo_url,contact_email").eq("slug", slug).eq("is_active", true).maybeSingle();
+    societyError = fallback.error;
+    society = fallback.data as typeof society;
+  }
+  if (societyError) return <main className="mx-auto max-w-3xl px-5 py-12 sm:px-8"><h1 className="text-2xl font-bold">Society profile unavailable</h1><p className="mt-3 text-sm leading-6 text-slate-600">The public profile could not be loaded. Please try again later.</p><Link href="/societies" className="mt-5 inline-block font-semibold text-blue-700 hover:underline">Back to Explore Societies</Link></main>;
   if (!society) notFound();
   const { data: { user } } = await supabase.auth.getUser();
   const { data: membership } = user ? await supabase.from("society_members").select("id").eq("society_id", society.id).eq("user_id", user.id).eq("status", "active").maybeSingle() : { data: null };

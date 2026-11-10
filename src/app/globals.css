@@ -26,24 +26,31 @@ button:not(:disabled) { cursor: pointer; }
 
 :root[data-theme="dark"] { color-scheme: dark; --dark-surface: #17212e; --dark-subtle: #202d3b; --dark-border: #344456; --dark-text: #e7edf4; --dark-secondary: #b4c0ce; --dark-muted: #91a0b0; }
 :root[data-theme="dark"] body { background: #101821; color: var(--dark-text); }
-:root[data-theme="dark"] [class*="bg-white"] { background-color: var(--dark-surface) !important; }
-:root[data-theme="dark"] [class*="bg-slate-50"], :root[data-theme="dark"] [class*="bg-gray-50"] { background-color: var(--dark-subtle) !important; }
-:root[data-theme="dark"] [class*="text-slate-950"], :root[data-theme="dark"] [class*="text-slate-900"], :root[data-theme="dark"] [class*="text-slate-800"], :root[data-theme="dark"] [class*="text-slate-700"], :root[data-theme="dark"] [class*="text-gray-900"] { color: var(--dark-text) !important; }
-:root[data-theme="dark"] [class*="text-slate-600"], :root[data-theme="dark"] [class*="text-slate-500"], :root[data-theme="dark"] [class*="text-gray-600"] { color: var(--dark-secondary) !important; }
-:root[data-theme="dark"] [class*="text-slate-400"], :root[data-theme="dark"] [class*="text-slate-300"] { color: var(--dark-muted) !important; }
-:root[data-theme="dark"] [class*="border-slate-100"], :root[data-theme="dark"] [class*="border-slate-200"], :root[data-theme="dark"] [class*="border-slate-300"], :root[data-theme="dark"] [class*="border-gray-200"] { border-color: var(--dark-border) !important; }
+:root[data-theme="dark"] [class~="bg-white"], :root[data-theme="dark"] [class~="bg-white/95"] { background-color: var(--dark-surface) !important; }
+:root[data-theme="dark"] [class~="bg-slate-50"], :root[data-theme="dark"] [class~="bg-gray-50"] { background-color: var(--dark-subtle) !important; }
+:root[data-theme="dark"] [class~="bg-slate-100"], :root[data-theme="dark"] [class~="bg-gray-100"] { background-color: #263646 !important; }
+:root[data-theme="dark"] [class~="text-slate-950"], :root[data-theme="dark"] [class~="text-slate-900"], :root[data-theme="dark"] [class~="text-slate-800"], :root[data-theme="dark"] [class~="text-slate-700"], :root[data-theme="dark"] [class~="text-gray-900"] { color: var(--dark-text) !important; }
+:root[data-theme="dark"] [class~="text-slate-600"], :root[data-theme="dark"] [class~="text-slate-500"], :root[data-theme="dark"] [class~="text-gray-600"] { color: var(--dark-secondary) !important; }
+:root[data-theme="dark"] [class~="text-slate-400"], :root[data-theme="dark"] [class~="text-slate-300"] { color: var(--dark-muted) !important; }
+:root[data-theme="dark"] [class~="text-amber-950"], :root[data-theme="dark"] [class~="text-amber-900"] { color: #ffe0a3 !important; }
+:root[data-theme="dark"] [class~="text-blue-950"], :root[data-theme="dark"] [class~="text-blue-900"] { color: #c5e2ff !important; }
+:root[data-theme="dark"] [class~="text-emerald-700"], :root[data-theme="dark"] [class~="text-emerald-800"] { color: #91e3bd !important; }
+:root[data-theme="dark"] [class~="border-slate-100"], :root[data-theme="dark"] [class~="border-slate-200"], :root[data-theme="dark"] [class~="border-slate-300"], :root[data-theme="dark"] [class~="border-gray-200"] { border-color: var(--dark-border) !important; }
 :root[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]), :root[data-theme="dark"] textarea, :root[data-theme="dark"] select { background-color: #111b26; color: var(--dark-text); border-color: var(--dark-border); color-scheme: dark; }
 :root[data-theme="dark"] option { background: #17212e; color: var(--dark-text); }
-:root[data-theme="dark"] [class*="bg-blue-50"] { background-color: #1b3044 !important; }
-:root[data-theme="dark"] [class*="bg-amber-50"] { background-color: #3b3020 !important; }
-:root[data-theme="dark"] [class*="bg-red-50"] { background-color: #3b2429 !important; }
-:root[data-theme="dark"] [class*="text-red-800"], :root[data-theme="dark"] [class*="text-red-700"] { color: #ffb4ad !important; }
-:root[data-theme="dark"] [class*="border-red-200"] { border-color: #70434a !important; }
-:root[data-theme="dark"] [class*="bg-green-50"] { background-color: #20372e !important; }
-:root[data-theme="dark"] [class*="text-green-700"], :root[data-theme="dark"] [class*="text-green-800"] { color: #96dfb7 !important; }
-:root[data-theme="dark"] [class*="bg-amber-50"] { background-color: #3b3020 !important; }
-:root[data-theme="dark"] [class*="text-amber-800"], :root[data-theme="dark"] [class*="text-amber-700"] { color: #f5cf85 !important; }
-:root[data-theme="dark"] [class*="text-blue-800"], :root[data-theme="dark"] [class*="text-blue-700"], :root[data-theme="dark"] [class*="text-teal-800"] { color: #90c9ff !important; }
-:root[data-theme="dark"] [class*="border-dashed"] { border-color: #526275 !important; }
-:root[data-theme="dark"] [class*="divide-slate-100"] > :not([hidden]) ~ :not([hidden]) { border-color: var(--dark-border) !important; }
+:root[data-theme="dark"] [class~="bg-blue-50"] { background-color: #1b3044 !important; }
+:root[data-theme="dark"] [class~="bg-amber-50"] { background-color: #3b3020 !important; }
+:root[data-theme="dark"] [class~="bg-red-50"] { background-color: #3b2429 !important; }
+:root[data-theme="dark"] [class~="text-red-800"], :root[data-theme="dark"] [class~="text-red-700"] { color: #ffb4ad !important; }
+:root[data-theme="dark"] [class~="border-red-200"] { border-color: #70434a !important; }
+:root[data-theme="dark"] [class~="bg-green-50"] { background-color: #20372e !important; }
+:root[data-theme="dark"] [class~="bg-emerald-50"] { background-color: #20372e !important; }
+:root[data-theme="dark"] [class~="bg-emerald-100"] { background-color: #264638 !important; }
+:root[data-theme="dark"] [class~="hover:bg-slate-50"]:hover, :root[data-theme="dark"] [class~="hover:bg-white"]:hover { background-color: #263646 !important; }
+:root[data-theme="dark"] [class~="hover:bg-blue-700"]:hover { background-color: #275586 !important; }
+:root[data-theme="dark"] [class~="text-green-700"], :root[data-theme="dark"] [class~="text-green-800"] { color: #96dfb7 !important; }
+:root[data-theme="dark"] [class~="text-amber-800"], :root[data-theme="dark"] [class~="text-amber-700"] { color: #f5cf85 !important; }
+:root[data-theme="dark"] [class~="text-blue-800"], :root[data-theme="dark"] [class~="text-blue-700"], :root[data-theme="dark"] [class~="text-teal-800"] { color: #90c9ff !important; }
+:root[data-theme="dark"] [class~="border-dashed"] { border-color: #526275 !important; }
+:root[data-theme="dark"] [class~="divide-slate-100"] > :not([hidden]) ~ :not([hidden]) { border-color: var(--dark-border) !important; }
 :root[data-theme="dark"] ::selection { background: #315c78; color: white; }

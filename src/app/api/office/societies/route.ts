@@ -35,20 +35,8 @@ export async function PATCH(request: Request) {
 export async function POST(request: Request) {
   const auth = await officeUser(); if (!auth) return NextResponse.json({ error: "OSSIE access required." }, { status: 403 });
   const social=z.string().url().refine(value=>/^https?:\/\//i.test(value)).optional().or(z.literal(""));
-  const input = z.object({ ...societyFields, patronEmail: z.string().trim().email(), logoUrl:z.string().url().refine(isUploadedMediaUrl).optional().or(z.literal("")),facebookUrl:social,linkedinUrl:social,instagramUrl:social }).safeParse(await request.json()); if (!input.success) return NextResponse.json({ error: input.error.issues[0]?.message }, { status: 400 });
-  const patronEmail = input.data.patronEmail.toLowerCase();
-  if (!/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*@iba\.edu\.pk$/i.test(patronEmail)) return NextResponse.json({ error: "Societies need a faculty patron with an IBA faculty email." }, { status: 400 });
-  const adminClient = admin();
-  const { data: profile, error: profileError } = await adminClient.from("profiles").select("id,account_type").eq("email",patronEmail).maybeSingle();
-  if (profileError) return NextResponse.json({ error: profileError.message }, { status: 400 });
-  let patronId = profile?.id;
-  if (profile && profile.account_type !== "faculty") return NextResponse.json({ error: "The society patron must have a faculty account." }, { status: 400 });
-  if (!patronId) {
-    const { data: invited, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(patronEmail,{redirectTo:`${process.env.NEXT_PUBLIC_APP_URL??"http://localhost:3000"}/auth/callback`});
-    if (inviteError) return NextResponse.json({ error: inviteError.message }, { status: 400 });
-    patronId=invited.user.id;
-  }
-  const { data, error } = await auth.supabase.rpc("create_society_with_patron",{society_name:input.data.name,society_slug:input.data.slug,society_description:input.data.description,society_contact_email:input.data.contactEmail||null,patron_profile_id:patronId,society_logo_url:input.data.logoUrl||null,society_facebook_url:input.data.facebookUrl||null,society_linkedin_url:input.data.linkedinUrl||null,society_instagram_url:input.data.instagramUrl||null});
+  const input = z.object({ ...societyFields, logoUrl:z.string().url().refine(isUploadedMediaUrl).optional().or(z.literal("")),facebookUrl:social,linkedinUrl:social,instagramUrl:social }).safeParse(await request.json()); if (!input.success) return NextResponse.json({ error: input.error.issues[0]?.message }, { status: 400 });
+  const { data, error } = await admin().from("societies").insert({ name: input.data.name, slug: input.data.slug, description: input.data.description, contact_email: input.data.contactEmail || null, logo_url: input.data.logoUrl || null, facebook_url: input.data.facebookUrl || null, linkedin_url: input.data.linkedinUrl || null, instagram_url: input.data.instagramUrl || null, created_by: auth.user.id }).select("id,name,slug,description,contact_email,is_active,logo_url").single();
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ society: data }, { status: 201 });
 }
@@ -62,11 +50,37 @@ export async function PUT(request: Request) {
   const { data: profile, error: profileError } = await adminClient.from("profiles").select("id,account_type,email").eq("email", email).maybeSingle();
   if (profileError) return NextResponse.json({ error: profileError.message }, { status: 400 });
   let userId = profile?.id;
-  if (!userId && body.data.action === "assign") {
-    const allowed = body.data.role === "patron" ? /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*@iba\.edu\.pk$/i.test(email) : /^[a-z]+\.[a-z]+\.\d{5}@khi\.iba\.edu\.pk$/i.test(email);
-    if (!allowed) return NextResponse.json({ error: body.data.role === "patron" ? "Patrons need an IBA faculty email." : "Society admins need an IBA student email." }, { status: 400 });
-    const { data: invited, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/auth/callback` });
-    if (inviteError) return NextResponse.json({ error: inviteError.message }, { status: 400 }); userId = invited.user.id;
+  if (body.data.action === "assign") {
+    const roleEmailValid = body.data.role === "patron"
+      ? /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*@iba\.edu\.pk$/i.test(email)
+      : /^[a-z]+\.[a-z]+\.\d{5}@khi\.iba\.edu\.pk$/i.test(email);
+    if (!roleEmailValid) return NextResponse.json({ error: body.data.role === "patron" ? "Patrons need an IBA faculty email." : "Society admins need an IBA student email." }, { status: 400 });
+    if (profile && body.data.role === "panelist" && profile.account_type !== "student") return NextResponse.json({ error: "Society admins must have student accounts." }, { status: 400 });
+    if (profile && body.data.role === "patron" && profile.account_type !== "faculty") return NextResponse.json({ error: "Society patrons must have faculty accounts." }, { status: 400 });
+
+    if (body.data.role === "panelist") {
+      const [{ data: existing }, { count, error: countError }] = await Promise.all([
+        userId ? adminClient.from("society_members").select("society_id,status").eq("user_id", userId).eq("status", "active").maybeSingle() : Promise.resolve({ data: null, error: null }),
+        adminClient.from("society_members").select("id", { count: "exact", head: true }).eq("society_id", body.data.societyId).eq("status", "active"),
+      ]);
+      if (countError) return NextResponse.json({ error: "Could not validate the society admin limit." }, { status: 500 });
+      if (existing && existing.society_id !== body.data.societyId) return NextResponse.json({ error: "A student can be an admin for only one society at a time." }, { status: 409 });
+      if ((count ?? 0) >= 3 && existing?.society_id !== body.data.societyId) return NextResponse.json({ error: "This society already has the maximum of three active admins." }, { status: 409 });
+    } else {
+      const [{ data: existing }, { count, error: countError }] = await Promise.all([
+        userId ? adminClient.from("society_patrons").select("society_id").eq("user_id", userId).maybeSingle() : Promise.resolve({ data: null, error: null }),
+        adminClient.from("society_patrons").select("id", { count: "exact", head: true }).eq("society_id", body.data.societyId),
+      ]);
+      if (countError) return NextResponse.json({ error: "Could not validate the patron assignment." }, { status: 500 });
+      if (existing && existing.society_id !== body.data.societyId) return NextResponse.json({ error: "A faculty patron can be assigned to only one society at a time." }, { status: 409 });
+      if ((count ?? 0) >= 1 && existing?.society_id !== body.data.societyId) return NextResponse.json({ error: "This society already has a faculty patron." }, { status: 409 });
+    }
+
+    if (!userId) {
+      const { data: invited, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/auth/callback` });
+      if (inviteError) return NextResponse.json({ error: inviteError.message }, { status: 400 });
+      userId = invited.user.id;
+    }
   }
   if (!userId) return NextResponse.json({ error: "This email has no RADES account to remove." }, { status: 404 });
   if (body.data.action === "remove") {
@@ -79,10 +93,10 @@ export async function PUT(request: Request) {
     if (body.data.role === "patron" && profile && profile.account_type !== "faculty") return NextResponse.json({ error: "Society patrons must have faculty accounts." }, { status: 400 });
     if (body.data.role !== "patron") {
       const { error } = await adminClient.from("society_members").upsert({ society_id: body.data.societyId, user_id: userId, role: body.data.role, status: "active", added_by: auth.user.id }, { onConflict: "society_id,user_id" });
-      if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+      if (error) return NextResponse.json({ error: error.code === "23505" ? "This student already has an active society admin assignment." : error.code === "23514" ? "This society already has the maximum of three active admins." : error.message }, { status: error.code === "23505" || error.code === "23514" ? 409 : 400 });
     } else {
       const { error } = await adminClient.from("society_patrons").upsert({ society_id: body.data.societyId, user_id: userId, assigned_by: auth.user.id }, { onConflict: "society_id,user_id" });
-      if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+      if (error) return NextResponse.json({ error: error.code === "23505" ? "This patron is already assigned or the society already has a patron." : error.message }, { status: error.code === "23505" ? 409 : 400 });
     }
   }
   return NextResponse.json({ ok: true });

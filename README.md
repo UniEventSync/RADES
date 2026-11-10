@@ -97,7 +97,7 @@ Set `DEVELOPER_PASSWORD` in `.env.local` to the shared development password you 
 npm run dev
 ```
 
-Open `http://localhost:3000` for the public landing page. `/home` redirects there; authenticated workspaces are at `/dashboard`. Students and faculty can sign up with their IBA email addresses and confirm through the link they receive. Test forgot-password from the sign-in page; that flow sends the six-digit code for entry on the website. Society admins can use `/admin` for their assigned society's events. OSSIE manages societies and assignments from `/dashboard` and can view campus-wide analytics. Patrons review/approve their society's events first, then OSSIE reviews/approves. Society and event analytics show record fields and event metrics available today; registration, check-in, and revenue metrics need the registration/payment features first.
+Open `http://localhost:3000` for the public landing page. `/home` redirects there; authenticated workspaces are at `/dashboard`. Students and faculty can sign up with their IBA email addresses and confirm through the link they receive. Test forgot-password from the sign-in page; that flow sends an eight-digit code for entry on the website. Society admins can use `/admin` for their assigned society's events. OSSIE manages societies and assignments from `/dashboard` and can view campus-wide analytics. Patrons review/approve their society's events first, then OSSIE reviews/approves. Society and event analytics show record fields and event metrics available today; registration, check-in, and revenue metrics need the registration/payment features first.
 
 The site header, sign-in form, and browser icon use `public/Icon.png`.
 
@@ -139,7 +139,6 @@ git push -u origin main
 ```
 
 `.env.local` is ignored by Git. Commit `.env.example` so collaborators can create their own local configuration. If `origin` already exists, use `git remote set-url origin https://github.com/YOUR-USERNAME/YOUR-REPOSITORY.git` instead of adding it again.
-
 
 
 

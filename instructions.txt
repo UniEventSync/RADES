@@ -1582,7 +1582,7 @@ List everything done here. After each task completion update this list.
 ================================================================================
 
 3. Sprint 1 email and developer-access setup clarified: sign-up uses a confirmation
-   link; the six-digit email OTP is used only for forgot-password recovery. Added
+   link; the eight-digit email OTP is used only for forgot-password recovery. Added
    Gmail SMTP configuration guidance for a personal Gmail sender, publishable /
    secret Supabase API key guidance, the two follow-up developer allowlist/profile
    migrations, and an invitation seeder granting super_admin to the five named

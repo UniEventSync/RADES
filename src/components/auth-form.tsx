@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
-import { deriveStudentIdentity, emailSchema, loginEmailSchema } from "@/lib/auth/email-rules";
+import { deriveStudentIdentity, emailSchema, getAccountType, loginEmailSchema } from "@/lib/auth/email-rules";
 import { Check, Eye, EyeOff, LoaderCircle } from "lucide-react";
 
 type Mode = "signup" | "signin" | "forgot" | "reset" | "change" | "verify";
@@ -29,7 +29,7 @@ export function AuthForm({ mode, initialEmail = "", nextPath }: { mode: Mode; in
         if (names.length < 2) return setResult("Enter your first and last name.");
         if (password.length < 10) return setResult("Use a password with at least 10 characters.");
         if (password !== confirm) return setResult("The passwords do not match.");
-        const response = await fetch("/api/auth/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email.trim().toLowerCase(), password, firstName: names[0], lastName: names.slice(1).join(" ") }) });
+        const response = await fetch("/api/auth/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email.trim().toLowerCase(), password, firstName: names[0], lastName: names.slice(1).join(" "), accountType: getAccountType(email) }) });
         const body = await response.json(); if (!response.ok) return setResult(body.error ?? "We couldn’t create your account.");
         router.push(`/verify-email?email=${encodeURIComponent(email.trim().toLowerCase())}`); return;
       }
@@ -73,12 +73,13 @@ export function AuthForm({ mode, initialEmail = "", nextPath }: { mode: Mode; in
   const title = { signup: "Create Account", signin: "Welcome Back", forgot: "Reset Password", reset: "Choose a new password", change: "Change Password", verify: "Check your inbox" }[mode];
   const description = { signup: "Sign up with your IBA Email", signin: "Sign in with your IBA email and password.", forgot: "Enter your institutional email to receive a password reset code.", reset: "Enter the code from your email and choose a new password.", change: "Choose a new password for your RADES account.", verify: "Open the confirmation link in your email to activate your account." }[mode];
   const identity = deriveStudentIdentity(email);
+  const accountType = getAccountType(email);
   return <section className="w-full max-w-[650px]">
     <div className="mb-6 text-center"><h1 className="text-3xl font-bold tracking-tight text-slate-950">{title}</h1><p className="mt-2 text-sm text-slate-600">{description}</p></div>
     <form onSubmit={submit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
       {mode === "signup" && <>
         <label className="block text-sm font-semibold">Full Name<input className={field} autoComplete="name" value={fullName} onChange={e=>setFullName(e.target.value)} required placeholder="First and last name"/></label>
-        <label className="block text-sm font-semibold">IBA Email<input className={field} type="email" autoComplete="email" value={email} onChange={e=>onEmail(e.target.value)} required placeholder="name@khi.iba.edu.pk"/><span className="mt-1 block text-xs font-normal text-slate-500">Students: firstname.lastname.ERP@khi.iba.edu.pk · Faculty: name@iba.edu.pk</span></label>
+        <label className="block text-sm font-semibold">IBA Email<input className={field} type="email" autoComplete="email" value={email} onChange={e=>onEmail(e.target.value)} required placeholder="name@khi.iba.edu.pk"/><span className="mt-1 block text-xs font-normal text-slate-500">Students: firstname.secondname.ERP@khi.iba.edu.pk · Faculty: name@iba.edu.pk</span>{accountType&&<span className="mt-1 block text-xs font-semibold text-blue-700">{accountType === "student" ? "Student account" : "Faculty account"}</span>}</label>
       </>}
       {identityMode && mode !== "signup" && <label className="block text-sm font-semibold">IBA Email<input className={field} type="email" autoComplete="email" value={email} onChange={e=>onEmail(e.target.value)} required/></label>}
       {(mode === "signin" || mode === "signup" || mode === "reset" || mode === "change") && <div className={mode === "signup" ? "grid gap-4 sm:grid-cols-2" : ""}><label className="block text-sm font-semibold">{mode === "reset" || mode === "change" ? "New Password" : "Password"}<span className="relative block"><input className={`${field} pr-12`} type={showPassword?"text":"password"} autoComplete={mode==="signin"?"current-password":"new-password"} value={password} onChange={e=>setPassword(e.target.value)} required minLength={10}/><button type="button" aria-label={showPassword?"Hide password":"Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" onClick={()=>setShowPassword(!showPassword)}>{showPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></span></label>

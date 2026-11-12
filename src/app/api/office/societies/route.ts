@@ -52,7 +52,7 @@ export async function PUT(request: Request) {
   let userId = profile?.id;
   if (body.data.action === "assign") {
     const roleEmailValid = body.data.role === "patron"
-      ? /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*@iba\.edu\.pk$/i.test(email)
+      ? /^[a-z]+@iba\.edu\.pk$/i.test(email)
       : /^[a-z]+\.[a-z]+\.\d{5}@khi\.iba\.edu\.pk$/i.test(email);
     if (!roleEmailValid) return NextResponse.json({ error: body.data.role === "patron" ? "Patrons need an IBA faculty email." : "Society admins need an IBA student email." }, { status: 400 });
     if (profile && body.data.role === "panelist" && profile.account_type !== "student") return NextResponse.json({ error: "Society admins must have student accounts." }, { status: 400 });

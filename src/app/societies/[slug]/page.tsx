@@ -23,7 +23,7 @@ export default async function SocietyProfilePage({ params }: { params: Promise<{
   if (!society) notFound();
   const { data: { user } } = await supabase.auth.getUser();
   const { data: membership } = user ? await supabase.from("society_members").select("id").eq("society_id", society.id).eq("user_id", user.id).eq("status", "active").maybeSingle() : { data: null };
-  const { data } = await supabase.from("events").select("id,society_id,title,description,category,venue,starts_at,ends_at,status,capacity,price_pkr,registration_type,image_url,societies(name,slug,logo_url)").eq("society_id", society.id).eq("status", "published").gt("ends_at", new Date().toISOString()).order("starts_at");
+  const { data } = await supabase.from("events").select("id,society_id,title,description,category,venue,starts_at,ends_at,status,capacity,price_pkr,registration_type,image_url,societies(name,slug,logo_url)").eq("society_id", society.id).eq("is_public", true).neq("status", "cancelled").gt("ends_at", new Date().toISOString()).order("starts_at");
   const events = ((data ?? []) as unknown as Array<EventItem & { societies: { name: string; slug: string; logo_url:string|null } | null }>).map(event => ({ ...event, society: event.societies?.name ?? society.name, society_slug: event.societies?.slug ?? society.slug, society_logo_url:event.societies?.logo_url }));
   const item = society as Society;
   const initials = item.name.split(/\s+/).slice(0, 2).map(part => part.charAt(0)).join("").toUpperCase();

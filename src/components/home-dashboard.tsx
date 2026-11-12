@@ -54,7 +54,7 @@ export function HomeDashboard({ user, initialSocieties, initialEvents, now }: { 
     if (initialEffectStarted.current) return;
     initialEffectStarted.current = true;
     if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
-      supabase.from("events").select("*, societies(name)").eq("status", "published").gt("ends_at", new Date().toISOString()).order("starts_at").then(({data}) => { if (data) setPublished((data as unknown as ReviewEvent[]).map((e)=>({...e,society:e.societies?.name??"IBA Society"}))); });
+      supabase.from("events").select("*, societies(name)").eq("is_public", true).neq("status", "cancelled").gt("ends_at", new Date().toISOString()).order("starts_at").then(({data}) => { if (data) setPublished((data as unknown as ReviewEvent[]).map((e)=>({...e,society:e.societies?.name??"IBA Society"}))); });
     }
   }, [office, supabase]);
   const panelistSocieties = useMemo(() => societies.filter(s => s.society_members?.some(m => m.user_id === user.id && m.status === "active")), [societies,user.id]);

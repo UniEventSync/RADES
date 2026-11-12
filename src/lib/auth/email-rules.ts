@@ -3,7 +3,7 @@ import { z } from "zod";
 export const ERP_DIGITS = 5;
 const erp = `\\d{${ERP_DIGITS}}`;
 export const STUDENT_EMAIL = new RegExp(`^[a-z]+\\.[a-z]+\\.${erp}@khi\\.iba\\.edu\\.pk$`, "i");
-export const FACULTY_EMAIL = /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*@iba\.edu\.pk$/i;
+export const FACULTY_EMAIL = /^[a-z]+@iba\.edu\.pk$/i;
 
 export type AccountType = "student" | "faculty";
 export const DEVELOPMENT_ADMINS = [

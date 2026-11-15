@@ -12,7 +12,7 @@ export async function middleware(request: NextRequest) {
   if (!user) { const url=request.nextUrl.clone();url.pathname="/sign-in";url.searchParams.set("next",request.nextUrl.pathname);return NextResponse.redirect(url); }
   if (request.nextUrl.pathname.startsWith("/office")) {
     const { data: profile }=await supabase.from("profiles").select("global_role").eq("id",user.id).maybeSingle();
-    if(!profile||!["office","super_admin"].includes(profile.global_role)){const url=request.nextUrl.clone();url.pathname="/home";return NextResponse.redirect(url);}
+    if(!profile||!["office","super_admin"].includes(profile.global_role)) return new NextResponse("OSSIE access required.", { status: 403, headers: { "content-type": "text/plain; charset=utf-8" } });
   }
   return response;
 }

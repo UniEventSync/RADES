@@ -6,7 +6,8 @@ import { sendTrackedEmail } from "@/lib/email/tracked-send";
 import { emailTemplates } from "@/lib/email/templates";
 import { isUploadedMediaUrl } from "@/lib/storage/media";
 
-const eventInput = z.object({ societyId: z.string().uuid(), title: z.string().trim().min(3).max(150), description: z.string().trim().min(10).max(8000), category: z.string().trim().min(2).max(50), venue: z.string().trim().min(2).max(200), startsAt: z.string().datetime({ offset: true }), endsAt: z.string().datetime({ offset: true }), capacity: z.number().int().positive().nullable().optional(), pricePkr: z.number().int().min(0).default(0), registrationType: z.enum(["solo", "team"]).default("solo"), image_url: z.string().trim().url().refine(isUploadedMediaUrl).or(z.literal("")).optional(), status: z.enum(["draft", "pending_patron"]).default("pending_patron") });
+const plainText = (min: number, max: number) => z.string().trim().min(min).max(max).refine(value => !/[<>]/.test(value), "HTML markup is not allowed.");
+const eventInput = z.object({ societyId: z.string().uuid(), title: plainText(3,150), description: plainText(10,8000), category: plainText(2,50), venue: plainText(2,200), startsAt: z.string().datetime({ offset: true }), endsAt: z.string().datetime({ offset: true }), capacity: z.number().int().positive().nullable().optional(), pricePkr: z.number().int().min(0).default(0), registrationType: z.enum(["solo", "team"]).default("solo"), image_url: z.string().trim().url().refine(isUploadedMediaUrl).or(z.literal("")).optional(), status: z.enum(["draft", "pending_patron"]).default("pending_patron") });
 type PatronRow = { user_id: string; profiles: { email?: string } | null };
 
 export async function POST(request: Request) {
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
   const input = eventInput.safeParse(await request.json());
   if (!input.success) return NextResponse.json({ error: input.error.issues[0]?.message ?? "Check the event details." }, { status: 400 });
   if (new Date(input.data.startsAt) <= new Date()) return NextResponse.json({ error: "An event must start in the future." }, { status: 400 });
-  if (new Date(input.data.endsAt) <= new Date(input.data.startsAt)) return NextResponse.json({ error: "The event end must be after its start." }, { status: 400 });
+  if (new Date(input.data.endsAt) <= new Date(input.data.startsAt)) return NextResponse.json({ error: "Choose an end date and time later than the event start." }, { status: 400 });
   const { data: membership, error: membershipError } = await supabase.from("society_members").select("id").eq("society_id", input.data.societyId).eq("user_id", user.id).eq("status", "active").maybeSingle();
   if (membershipError) return NextResponse.json({ error: "Could not verify your society admin assignment." }, { status: 500 });
   if (!membership) return NextResponse.json({ error: "You are not assigned as a society admin for this society." }, { status: 403 });

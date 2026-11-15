@@ -12,7 +12,7 @@ type ManagedSociety = {
 const field = "mt-1.5 h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100";
 const displayName = (person: Person) => [person?.first_name, person?.last_name].filter(Boolean).join(" ") || person?.email || "Invited member";
 
-export function OfficeSocietyManager({ society, name, slug, description, contactEmail, isActive, setName, setSlug, setDescription, setContactEmail, setIsActive, changes, onStageAdd, onStageRemove, onCancel, onSave, busy, error, success }: {
+export function OfficeSocietyManager({ society, name, slug, description, contactEmail, isActive, setName, setSlug, setDescription, setContactEmail, setIsActive, changes, onStageAdd, onStageRemove, onCancel, onSave, busy }: {
   society: ManagedSociety;
   name: string; slug: string; description: string; contactEmail: string; isActive: boolean;
   setName: (value: string) => void; setSlug: (value: string) => void; setDescription: (value: string) => void;
@@ -20,7 +20,7 @@ export function OfficeSocietyManager({ society, name, slug, description, contact
   changes: SocietyAssignmentChange[];
   onStageAdd: (email: string, role: SocietyAssignmentChange["role"]) => Promise<boolean>;
   onStageRemove: (email: string, role: SocietyAssignmentChange["role"]) => void;
-  onCancel: () => void; onSave: () => void; busy: boolean; error: string; success: string;
+  onCancel: () => void; onSave: () => void; busy: boolean;
 }) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<SocietyAssignmentChange["role"]>("panelist");
@@ -47,7 +47,6 @@ export function OfficeSocietyManager({ society, name, slug, description, contact
       </section>
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700"><UsersRound size={20}/></span><div><h3 className="font-bold">Society assignments</h3><p className="text-xs text-slate-500">Up to three admins and one optional faculty patron</p></div></div>
         <form onSubmit={async event => { event.preventDefault(); if (await onStageAdd(email, role)) setEmail(""); }} className="mt-5 rounded-xl bg-slate-50 p-4"><div className="grid gap-3 sm:grid-cols-[.8fr_1.2fr]"><label className="block text-xs font-semibold text-slate-600">Assignment type<select className={field} value={role} onChange={event => setRole(event.target.value as SocietyAssignmentChange["role"])}><option value="panelist">Society admin</option><option value="patron">Faculty patron (optional)</option></select></label><label className="block text-xs font-semibold text-slate-600">IBA email<input className={field} type="email" value={email} onChange={event => setEmail(event.target.value)} required placeholder={role === "patron" ? "name@iba.edu.pk" : "firstname.lastname.ERP@khi.iba.edu.pk"}/></label></div><button disabled={busy} className="mt-3 inline-flex h-10 items-center gap-2 rounded-lg border border-blue-200 bg-white px-3 text-sm font-semibold text-blue-800 transition hover:bg-blue-50 disabled:opacity-50"><UserPlus size={16}/>Add to pending changes</button></form>
-        {error && <p role="alert" className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}{!error && success && <p role="status" className="mt-3 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">{success}</p>}
         <div className="mt-5"><div className="mb-2 flex items-center justify-between"><h4 className="text-sm font-bold">Student admins</h4><span className="text-xs text-slate-500">{admins.length} / 3</span></div><ul className="space-y-2">{admins.map((member, index) => assignmentRow(member.profiles ?? null, member.id ?? member.user_id ?? String(index), "panelist"))}</ul>{admins.length === 0 && <p className="rounded-xl border border-dashed border-slate-300 p-4 text-center text-sm text-slate-500">No student admins assigned yet.</p>}</div>
         <div className="mt-5 border-t border-slate-100 pt-5"><div className="mb-2 flex items-center justify-between"><h4 className="text-sm font-bold">Faculty patron</h4><span className="text-xs text-slate-500">Optional</span></div><ul className="space-y-2">{patrons.map((patron, index) => assignmentRow(patron.profiles ?? null, patron.id ?? patron.user_id ?? String(index), "patron"))}</ul>{patrons.length === 0 && <p className="rounded-xl border border-dashed border-slate-300 p-4 text-center text-sm text-slate-500">No patron assigned. You can add one later before an event is submitted for review.</p>}</div>
         {changes.length > 0 && <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs leading-5 text-blue-950 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-100">{changes.filter(change => change.action === "assign").length} assignment(s) to add and {changes.filter(change => change.action === "remove").length} to remove. Changes are pending save.</div>}

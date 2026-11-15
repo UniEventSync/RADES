@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SocietyWorkspaceShell } from "@/components/society-workspace-shell";
+import { ToastOnMount } from "@/components/toast-provider";
 
 type Person = { first_name: string | null; last_name: string | null; email: string };
 type Member = { id: string; user_id: string; role: string; status: string; profiles: Person | Person[] | null };
@@ -32,7 +33,7 @@ export default async function SocietyPanelPage({ searchParams }: { searchParams:
 
   return <SocietyWorkspaceShell society={society} societies={societies} tab="panel">
     <p className="text-xs font-bold uppercase tracking-[.16em] text-blue-700">Society workspace</p><h1 className="mt-2 text-3xl font-bold">Society panel</h1><p className="mt-2 text-sm text-slate-600">The active student admins and faculty patron assigned to {society.name}.</p>
-    {memberError || patronError ? <p role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">Society assignments could not be loaded.</p> : <div className="mt-6 grid gap-5 lg:grid-cols-2">
+    {memberError || patronError ? <><ToastOnMount message="Society assignments could not be loaded." kind="error"/><p className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">Society assignments are temporarily unavailable.</p></> : <div className="mt-6 grid gap-5 lg:grid-cols-2">
       <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6"><div className="flex items-start justify-between gap-3"><div><h2 className="text-xl font-bold">Society admins</h2><p className="mt-1 text-sm text-slate-500">{members.length} of 3 active assignments</p></div><span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-800">Student panel</span></div>
         {members.length ? <ul className="mt-5 divide-y divide-slate-100">{members.map(member => {const person = personOf(member.profiles);return <li key={member.id} className="flex items-center gap-3 py-4"><span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-bold text-blue-800">{(person?.first_name?.[0] ?? person?.email?.[0] ?? "S").toUpperCase()}</span><div className="min-w-0"><p className="truncate font-semibold">{displayName(person, "Society admin")}</p>{person?.email ? <a href={`mailto:${person.email}`} className="block truncate text-sm text-blue-700 hover:underline">{person.email}</a> : <p className="text-sm text-slate-500">Contact details unavailable</p>}</div><span className="ml-auto text-xs font-medium text-slate-500">Admin</span></li>})}</ul> : <p className="mt-5 rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">No active society admins are assigned.</p>}
       </section>

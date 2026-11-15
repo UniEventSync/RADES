@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { deriveStudentIdentity, emailSchema, getAccountType, loginEmailSchema } from "@/lib/auth/email-rules";
-import { Check, Eye, EyeOff, LoaderCircle } from "lucide-react";
+import { Eye, EyeOff, LoaderCircle } from "lucide-react";
+import { useToast } from "@/components/toast-provider";
 
 type Mode = "signup" | "signin" | "forgot" | "reset" | "change" | "verify";
 const field = "mt-1.5 h-11 w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-700 focus:ring-4 focus:ring-blue-100";
@@ -13,9 +14,12 @@ const button = "flex h-11 w-full items-center justify-center gap-2 rounded-xl bg
 
 export function AuthForm({ mode, initialEmail = "", nextPath }: { mode: Mode; initialEmail?: string; nextPath?: string }) {
   const router = useRouter();
+  const toast = useToast();
   const [email, setEmail] = useState(initialEmail); const [fullName, setFullName] = useState(""); const [phone, setPhone] = useState("");
   const [password, setPassword] = useState(""); const [confirm, setConfirm] = useState(""); const [otp, setOtp] = useState("");
   const [showPassword, setShowPassword] = useState(false); const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [notice, setNotice] = useState("");
+  useEffect(() => { if (error) toast(error, "error"); }, [error, toast]);
+  useEffect(() => { if (notice) toast(notice, "success"); }, [notice, toast]);
   const getSupabase = () => { if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) throw new Error("Authentication is not configured yet. Add your Supabase keys to .env.local."); return createClient(); };
   const setResult = (message: string) => { setError(message); setBusy(false); };
   const validateEmail = () => { const result = (mode === "signup" ? emailSchema : loginEmailSchema).safeParse(email); if (!result.success) { setResult(result.error.issues[0]?.message ?? "Enter a valid email address."); return false; } return true; };
@@ -88,7 +92,6 @@ export function AuthForm({ mode, initialEmail = "", nextPath }: { mode: Mode; in
       {(mode === "verify" || mode === "reset") && mode === "reset" && <label className="block text-sm font-semibold">Email<input className={field} type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label>}
       {mode === "reset" && <label className="block text-sm font-semibold">Recovery code (6-8 digits)<input className={`${field} tracking-[.35em]`} inputMode="numeric" maxLength={8} value={otp} onChange={e=>setOtp(e.target.value.replace(/\D/g,""))} required/></label>}
       {mode === "signin" && <div className="text-right"><Link href="/forgot-password" className="text-sm font-semibold text-blue-700">Forgot Password?</Link></div>}
-      {error && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}{notice && <p role="status" className="flex gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800"><Check size={18}/>{notice}</p>}
       {mode === "forgot" && notice && <Link href={`/reset-password?email=${encodeURIComponent(email)}`} className="block text-center text-sm font-semibold text-blue-700">I have a code · continue</Link>}
       {mode !== "verify" && <button className={button} disabled={busy}>{busy&&<LoaderCircle className="animate-spin" size={18}/>}{{signup:"Create Account",signin:"Sign In",forgot:"Send reset code",reset:"Update Password",change:"Update Password",verify:"Verify email"}[mode]}</button>}
       {mode === "verify" && <button type="button" disabled={busy} onClick={resend} className="w-full py-2 text-sm font-semibold text-blue-700">Resend confirmation link</button>}

@@ -5,8 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { isUploadedMediaUrl } from "@/lib/storage/media";
 
 const societyFields = {
-  name: z.string().trim().min(2).max(100),
-  description: z.string().trim().max(2000).default(""),
+  name: z.string().trim().min(2).max(100).refine(value => !/[<>]/.test(value), "HTML markup is not allowed."),
+  description: z.string().trim().max(2000).refine(value => !/[<>]/.test(value), "HTML markup is not allowed.").default(""),
   contactEmail: z.string().trim().email().optional().or(z.literal("")),
   slug: z.string().trim().min(2).max(100).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
 };

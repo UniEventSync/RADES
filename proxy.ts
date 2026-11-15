@@ -21,11 +21,21 @@ export async function proxy(request: NextRequest) {
   }
   if (pathname.startsWith("/office")) {
     const { data: profile }=await supabase.from("profiles").select("global_role").eq("id",user.id).maybeSingle();
-    if(!profile||!["office","super_admin"].includes(profile.global_role)){const url=request.nextUrl.clone();url.pathname="/home";return NextResponse.redirect(url);}
+    if(!profile||!["office","super_admin"].includes(profile.global_role)) return new NextResponse("OSSIE access required.", { status: 403, headers: { "content-type": "text/plain; charset=utf-8" } });
   }
-  if ((pathname === "/admin" || pathname.startsWith("/admin/")) && !/^\/admin\/events\/[^/]+\/(analytics|cancel)$/.test(pathname)) {
-    const { data: memberships } = await supabase.from("society_members").select("id").eq("user_id", user.id).eq("status", "active").limit(1);
-    if (!memberships?.length) { const url = request.nextUrl.clone(); url.pathname = "/events"; url.search = ""; return NextResponse.redirect(url); }
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    const [{ data: profile }, { data: memberships }] = await Promise.all([
+      supabase.from("profiles").select("global_role").eq("id", user.id).maybeSingle(),
+      supabase.from("society_members").select("society_id").eq("user_id", user.id).eq("status", "active"),
+    ]);
+    const office = profile && ["office", "super_admin"].includes(profile.global_role);
+    const eventId = pathname.match(/^\/admin\/events\/([^/]+)\/(?:analytics|cancel)$/)?.[1];
+    if (eventId) {
+      const { data: event } = await supabase.from("events").select("society_id").eq("id", eventId).maybeSingle();
+      if (!event || (!office && !memberships?.some(member => member.society_id === event.society_id))) return new NextResponse("Society admin access required.", { status: 403, headers: { "content-type": "text/plain; charset=utf-8" } });
+    } else if (!office && !memberships?.length) {
+      return new NextResponse("Society admin access required.", { status: 403, headers: { "content-type": "text/plain; charset=utf-8" } });
+    }
   }
   return response;
 }

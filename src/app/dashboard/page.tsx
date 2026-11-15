@@ -15,7 +15,7 @@ export default async function DashboardPage() {
   ]);
   type SocietyRef = Pick<Society, "id" | "name" | "slug" | "description" | "logo_url">;
   type MembershipRow = { role: string; societies: SocietyRef | null };
-  type PatronRow = { societies: SocietyRef | null };
+  type PatronRow = { society_id: string; societies: SocietyRef | null };
   type EventRow = ReviewEvent & { societies: { name: string } | null };
   const societies: Society[] = [];
   const ensureSociety = (society: SocietyRef) => {
@@ -39,5 +39,6 @@ export default async function DashboardPage() {
   const events = ((eventResult.data ?? []) as unknown as EventRow[]).map(event => ({ ...event, society: event.societies?.name ?? "IBA Society" }));
   // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
-  return <HomeDashboard user={{id:user.id,email:user.email??"",firstName:profile.first_name,lastName:profile.last_name,accountType:profile.account_type,globalRole:profile.global_role}} initialSocieties={societies} initialEvents={events} now={now} />;
+  const patronSocietyIds = (patronResult.data ?? []).map(row => row.society_id);
+  return <HomeDashboard user={{id:user.id,email:user.email??"",firstName:profile.first_name,lastName:profile.last_name,accountType:profile.account_type,globalRole:profile.global_role}} initialSocieties={societies} initialEvents={events} now={now} patronSocietyIds={patronSocietyIds} />;
 }

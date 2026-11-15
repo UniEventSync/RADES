@@ -5,7 +5,7 @@ import { isUploadedMediaUrl } from "@/lib/storage/media";
 
 const socialUrl = z.union([z.string().url().refine(value=>/^https?:\/\//i.test(value)),z.literal("")]).optional();
 const profileSchema = z.object({
-  description: z.string().trim().max(2000),
+  description: z.string().trim().max(2000).refine(value => !/[<>]/.test(value), "HTML markup is not allowed."),
   contact_email: z.union([z.string().trim().email(), z.literal("")]),
   logo_url: z.union([z.string().url().refine(isUploadedMediaUrl),z.literal("")]).optional(),
   facebook_url:socialUrl, linkedin_url:socialUrl, instagram_url:socialUrl,

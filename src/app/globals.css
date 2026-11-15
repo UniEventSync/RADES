@@ -16,7 +16,7 @@
 
 :root { color-scheme: light; }
 * { box-sizing: border-box; }
-body { margin: 0; background: #f8fafc; color: #0f172a; font-family: Arial, Helvetica, sans-serif; }
+body { margin: 0; background: #f8fafc; color: #0f172a; font-family: Arial, Helvetica, sans-serif; overflow-wrap: anywhere; }
 a { color: inherit; text-decoration: none; }
 button, input, textarea, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
@@ -62,3 +62,6 @@ button:not(:disabled) { cursor: pointer; }
 :root[data-theme="dark"] [class~="border-dashed"] { border-color: #526275 !important; }
 :root[data-theme="dark"] [class~="divide-slate-100"] > :not([hidden]) ~ :not([hidden]) { border-color: var(--dark-border) !important; }
 :root[data-theme="dark"] ::selection { background: #315c78; color: white; }
+
+/* Break unusually long unspaced names and labels without affecting normal text. */
+.break-long-words { overflow-wrap: anywhere; }

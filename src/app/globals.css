@@ -46,6 +46,14 @@ button:not(:disabled) { cursor: pointer; }
 :root[data-theme="dark"] [class~="bg-green-50"] { background-color: #20372e !important; }
 :root[data-theme="dark"] [class~="bg-emerald-50"] { background-color: #20372e !important; }
 :root[data-theme="dark"] [class~="bg-emerald-100"] { background-color: #264638 !important; }
+:root[data-theme="dark"] .society-assignment-remove-button, :root[data-theme="dark"] .assignment-queue-remove-button { background-color: #263646 !important; border-color: #526275 !important; color: #e7edf4 !important; }
+:root[data-theme="dark"] .society-assignment-remove-button:hover, :root[data-theme="dark"] .assignment-queue-remove-button:hover { background-color: #3b2429 !important; border-color: #70434a !important; color: #ffb4ad !important; }
+:root[data-theme="dark"] .society-assignment-undo-button { background-color: #4b3a20 !important; border-color: #806b42 !important; color: #ffe0a3 !important; }
+:root[data-theme="dark"] .society-assignment-undo-button:hover { background-color: #634c25 !important; }
+:root[data-theme="dark"] .society-assignment-undo-button svg { color: #ffe0a3 !important; stroke: #ffe0a3 !important; opacity: 1 !important; }
+:root[data-theme="dark"] .society-assignment-row-pending { background-color: #3b3020 !important; border-color: #806b42 !important; }
+:root[data-theme="dark"] .society-assignment-role-badge { background-color: #263646 !important; color: #e7edf4 !important; }
+:root[data-theme="dark"] .society-assignment-pending-label { color: #ffe0a3 !important; }
 :root[data-theme="dark"] [class~="hover:bg-slate-50"]:hover, :root[data-theme="dark"] [class~="hover:bg-white"]:hover { background-color: #263646 !important; }
 :root[data-theme="dark"] [class~="hover:bg-blue-700"]:hover { background-color: #275586 !important; }
 :root[data-theme="dark"] [class~="text-green-700"], :root[data-theme="dark"] [class~="text-green-800"] { color: #96dfb7 !important; }

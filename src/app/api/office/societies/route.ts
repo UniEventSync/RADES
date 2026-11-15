@@ -51,13 +51,12 @@ export async function PUT(request: Request) {
   if (profileError) return NextResponse.json({ error: profileError.message }, { status: 400 });
   let userId = profile?.id;
   if (body.data.action === "assign") {
-    const roleEmailValid = body.data.role === "patron"
-      ? /^[a-z]+@iba\.edu\.pk$/i.test(email)
-      : /^[a-z]+\.[a-z]+\.\d{5}@khi\.iba\.edu\.pk$/i.test(email);
-    if (!roleEmailValid) return NextResponse.json({ error: body.data.role === "patron" ? "Patrons need an IBA faculty email." : "Society admins need an IBA student email." }, { status: 400 });
     if (profile && body.data.role === "panelist" && profile.account_type !== "student") return NextResponse.json({ error: "Society admins must have student accounts." }, { status: 400 });
     if (profile && body.data.role === "patron" && profile.account_type !== "faculty") return NextResponse.json({ error: "Society patrons must have faculty accounts." }, { status: 400 });
-
+    const roleEmailValid = body.data.role === "patron"
+      ? /^[a-z0-9]+@iba\.edu\.pk$/i.test(email)
+      : /^[a-z]+\.[a-z]+\.\d{5}@khi\.iba\.edu\.pk$/i.test(email);
+    if (!roleEmailValid) return NextResponse.json({ error: body.data.role === "patron" ? "Enter a faculty email in the format name@iba.edu.pk." : "Enter a student email in the format firstname.lastname.ERP@khi.iba.edu.pk." }, { status: 400 });
     if (body.data.role === "panelist") {
       const [{ data: existing }, { count, error: countError }] = await Promise.all([
         userId ? adminClient.from("society_members").select("society_id,status").eq("user_id", userId).eq("status", "active").maybeSingle() : Promise.resolve({ data: null, error: null }),
@@ -99,5 +98,5 @@ export async function PUT(request: Request) {
       if (error) return NextResponse.json({ error: error.code === "23505" ? "This patron is already assigned or the society already has a patron." : error.message }, { status: error.code === "23505" ? 409 : 400 });
     }
   }
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, invited: body.data.action === "assign" && !profile, email });
 }

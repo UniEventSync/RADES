@@ -4,6 +4,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe/server";
 import { processEventRefunds } from "@/lib/payments/event-refunds";
+import { sendRegistrationConfirmationEmails } from "@/lib/email/registration-confirmations";
 
 const registrationIdSchema = z.string().uuid();
 const checkoutEvents = new Set([
@@ -52,6 +53,13 @@ export async function POST(request: Request) {
   });
   if (error) return NextResponse.json({ error: "Could not record this Stripe event." }, { status: 500 });
   let outcome = (data as { outcome?: string } | null)?.outcome ?? "ignored";
+
+  if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
+    try {
+      const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;
+      await sendRegistrationConfirmationEmails(admin, registrationId.data, siteUrl);
+    } catch (sendError) { console.error("RADES paid registration confirmation email could not be attempted", sendError); }
+  }
 
   // Stripe retries with a new delivery attempt ID after failures. This lookup
   // also resumes a refund if the database transaction committed before Stripe's

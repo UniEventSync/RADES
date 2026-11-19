@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createOrReuseCheckout } from "@/lib/payments/checkout";
+import { sendRegistrationConfirmationEmails } from "@/lib/email/registration-confirmations";
 
 type RouteContext = { params: Promise<{ id: string }> };
 const bodySchema = z.object({ phone: z.string().trim().max(20).optional().default("").refine(value => !value || /^\+[1-9]\d{7,14}$/.test(value), "Enter a phone number in international format.") });
@@ -43,5 +45,10 @@ export async function POST(request: Request, { params }: RouteContext) {
     if ("error" in checkout) return NextResponse.json({ error: checkout.error }, { status: checkout.status });
     return NextResponse.json({ ...result, checkoutUrl: checkout.checkoutUrl }, { status: 201 });
   }
-  return NextResponse.json(data, { status: 201 });
+  let confirmationEmail = { sent: 0, failed: 0, skipped: 0 };
+  if (result.status === "confirmed") {
+    try { confirmationEmail = await sendRegistrationConfirmationEmails(createAdminClient(), result.registrationId, process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin); }
+    catch (sendError) { console.error("RADES registration confirmation could not be attempted", sendError); confirmationEmail = { sent: 0, failed: 1, skipped: 0 }; }
+  }
+  return NextResponse.json({ ...result, confirmationEmail }, { status: 201 });
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { UnpublishEventButton } from "@/components/unpublish-event-button";
+import { RetryEventRefundsButton } from "@/components/retry-event-refunds-button";
 
 export default async function EventAnalyticsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -30,7 +31,7 @@ export default async function EventAnalyticsPage({ params }: { params: Promise<{
     ["Metric", "Value"], ["Event", event.title], ["Society", societyName], ["Status", event.status], ["Phase", phase],
     ["Venue", event.venue], ["Starts", new Date(event.starts_at).toISOString()], ["Ends", new Date(event.ends_at).toISOString()],
     ["Capacity", event.capacity ?? "Unlimited"], ["Ticket price PKR", event.price_pkr], ["Refund records", refunds?.length ?? 0],
-    ...metrics, ["Note", "Registration, check-in, and payment data are not implemented; refund entries are zero-value demo records."],
+    ...metrics, ["Note", "Registration, attendance, and revenue metrics are not yet available in this report."],
   ].map(row => row.map(csvCell).join(",")).join("\n");
 
   return <main className="mx-auto max-w-7xl px-5 py-8 sm:px-8">
@@ -40,6 +41,6 @@ export default async function EventAnalyticsPage({ params }: { params: Promise<{
     </header>
     <section className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{metrics.map(([label, value], index) => <article key={label} className={`rounded-xl border border-t-4 ${["border-t-blue-600", "border-t-cyan-600", "border-t-violet-600", "border-t-emerald-600", "border-t-amber-500", "border-t-slate-500"][index]} border-slate-200 bg-white p-5 shadow-sm`}><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p><p className="mt-2 text-2xl font-bold tabular-nums">{value}</p></article>)}</section>
     <section className="mt-6 grid gap-5 lg:grid-cols-2"><article className="rounded-xl border border-slate-200 bg-white p-5"><h2 className="font-bold">Event details</h2><dl className="mt-4 grid grid-cols-2 gap-y-3 text-sm"><dt className="text-slate-500">Category</dt><dd>{event.category}</dd><dt className="text-slate-500">Venue</dt><dd>{event.venue}</dd><dt className="text-slate-500">Starts</dt><dd>{new Date(event.starts_at).toLocaleString("en-PK", { timeZone: "Asia/Karachi" })} PKT</dd><dt className="text-slate-500">Ends</dt><dd>{new Date(event.ends_at).toLocaleString("en-PK", { timeZone: "Asia/Karachi" })} PKT</dd></dl></article>
-      <article className="rounded-xl border border-amber-200 bg-amber-50 p-5"><h2 className="font-bold">Attendance and refund data</h2><p className="mt-2 text-sm leading-6 text-slate-700">Registration, check-in, and payment records are not implemented; cancellation writes a zero-value demo refund placeholder only.</p><div aria-label="Attendance chart unavailable" className="mt-4 space-y-2"><div className="h-3 rounded-full border border-dashed border-amber-400"/><p className="text-xs text-slate-600">Attendance rate unavailable</p></div>{refunds?.length ? <ul className="mt-3 space-y-2 text-sm">{refunds.map(refund => <li key={refund.id}>Dummy refund record · PKR {refund.amount_pkr} · {refund.status}</li>)}</ul> : null}{event.cancellation_reason && <p className="mt-3 text-sm"><strong>Cancellation reason:</strong> {event.cancellation_reason}</p>}</article></section>
+      <article className="rounded-xl border border-slate-200 bg-white p-5"><h2 className="font-bold">Attendance and refund data</h2><p className="mt-2 text-sm leading-6 text-slate-600">Attendance rate is unavailable in this report. Refund rows below show the recorded Stripe refund state.</p><div aria-label="Attendance chart unavailable" className="mt-4 space-y-2"><div className="h-3 rounded-full border border-dashed border-slate-300"/><p className="text-xs text-slate-600">Attendance rate unavailable</p></div>{refunds?.length ? <ul className="mt-3 space-y-2 text-sm">{refunds.map(refund => <li key={refund.id} className="flex flex-wrap justify-between gap-2 rounded-lg bg-slate-50 p-3"><span>{refund.status === "dummy_recorded" ? "Legacy refund record" : "Registration refund"}</span><span className="font-medium">PKR {refund.amount_pkr.toLocaleString()} · {refund.status.replaceAll("_", " ")}</span></li>)}</ul> : <p className="mt-3 text-sm text-slate-600">No refund records.</p>}{refunds?.some(refund => ["pending", "processing", "failed"].includes(refund.status)) && event.status === "cancelled" && <RetryEventRefundsButton eventId={id} />}{event.cancellation_reason && <p className="mt-3 text-sm"><strong>Cancellation reason:</strong> {event.cancellation_reason}</p>}</article></section>
   </main>;
 }

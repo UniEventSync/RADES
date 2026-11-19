@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe/server";
+import { processEventRefunds } from "@/lib/payments/event-refunds";
 
 const registrationIdSchema = z.string().uuid();
 const checkoutEvents = new Set([
@@ -11,15 +12,6 @@ const checkoutEvents = new Set([
   "checkout.session.async_payment_succeeded",
   "checkout.session.async_payment_failed",
 ]);
-
-async function refundLatePayment(stripe: Stripe, session: Stripe.Checkout.Session, admin: ReturnType<typeof createAdminClient>) {
-  const paymentIntent = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
-  if (!paymentIntent) throw new Error("Paid cancelled registration has no payment intent to refund.");
-  const refund = await stripe.refunds.create({ payment_intent: paymentIntent, reason: "requested_by_customer", metadata: { registration_id: session.metadata?.registration_id ?? "", source: "late_registration_payment" } }, { idempotencyKey: `rades-late-payment-refund-${session.id}` });
-  if (refund.status !== "succeeded") throw new Error("Stripe has not completed the refund yet.");
-  const { error } = await admin.rpc("mark_event_payment_refunded", { p_session_id: session.id, p_refund_id: refund.id });
-  if (error) throw new Error("The Stripe refund completed but RADES could not record it.");
-}
 
 export async function POST(request: Request) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -65,10 +57,14 @@ export async function POST(request: Request) {
   // also resumes a refund if the database transaction committed before Stripe's
   // refund API or the final status update failed.
   if (outcome === "refund_required" || outcome === "duplicate") {
-    const { data: payment } = await admin.from("event_payments").select("status").eq("checkout_session_id", session.id).maybeSingle();
+    const { data: payment } = await admin.from("event_payments").select("status,registration_id").eq("checkout_session_id", session.id).maybeSingle();
     if (payment?.status === "refund_pending") {
-      try { await refundLatePayment(stripe, session, admin); outcome = "refunded"; }
-      catch { return NextResponse.json({ error: "Refund processing is incomplete; Stripe will retry this event." }, { status: 500 }); }
+      const { data: registration } = await admin.from("registrations").select("event_id").eq("id", payment.registration_id).maybeSingle();
+      if (registration) {
+        const refunds = await processEventRefunds(admin, registration.event_id);
+        if (refunds.failed) return NextResponse.json({ error: "Refund processing failed; it can be retried from event analytics." }, { status: 500 });
+        outcome = refunds.refunded ? "refunded" : "refund_processing";
+      }
     }
   }
   return NextResponse.json({ received: true, outcome });

@@ -19,5 +19,6 @@ Statuses below are based on reports in this project conversation, not a direct q
 | `202611090003_event_media_access.sql` | Not applied | Ensures uploaded event banners are readable in public and authenticated event views, including after a partial media migration. |
 | `202611100001_schedule_and_assignment_guards.sql` | Not applied | Adds public social-column access fallback, society-scoped event overlap protection, a three-admin concurrency-safe limit, and one-society/one-patron assignment uniqueness. It stops with a clear error if conflicting existing assignments must be cleaned up first. |
 | `202611100002_optional_society_patron.sql` | Not applied | Removes the society-create and last-patron database requirements. Society creation may omit a patron; submitting an event for review still requires one. |
+| `202611190001_profile_phone_metadata.sql` | Not applied | Stores optional phone metadata for new profile rows only; does not change existing profile data. |
 
 Apply migrations in filename order, but do not rerun a migration just because its status is unconfirmed. Verify the current schema or ask the project owner first. The event-rules migration requires every existing society to have a faculty patron before it can complete.

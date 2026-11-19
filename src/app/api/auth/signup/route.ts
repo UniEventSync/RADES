@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { deriveStudentIdentity, emailSchema, getAccountType } from "@/lib/auth/email-rules";
 import { z } from "zod";
-const bodySchema = z.object({ email: z.string(), password: z.string().min(10).max(128), firstName: z.string().trim().min(1).max(60), lastName: z.string().trim().min(1).max(60), accountType: z.enum(["student", "faculty"]).optional() });
+const bodySchema = z.object({ email: z.string(), password: z.string().min(10).max(128), firstName: z.string().trim().min(1).max(60), lastName: z.string().trim().min(1).max(60), phone: z.string().trim().max(20).refine(value => !value || /^\+[1-9]\d{7,14}$/.test(value), "Enter a phone number in international format.").optional().default(""), accountType: z.enum(["student", "faculty"]).optional() });
 export async function POST(request: Request) {
   try {
     const parsed = bodySchema.safeParse(await request.json());
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.signUp({
       email, password: parsed.data.password,
-      options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin}/auth/callback`, data: { first_name: parsed.data.firstName || derived?.firstName, last_name: parsed.data.lastName || derived?.lastName, account_type: accountType, erp_number: derived?.erpNumber ?? null } },
+      options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin}/auth/callback`, data: { first_name: parsed.data.firstName || derived?.firstName, last_name: parsed.data.lastName || derived?.lastName, phone: parsed.data.phone || null, account_type: accountType, erp_number: derived?.erpNumber ?? null } },
     });
     if (error) {
       const errorMessage = error.message.toLowerCase();

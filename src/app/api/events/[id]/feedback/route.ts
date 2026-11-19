@@ -13,11 +13,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try { raw = await request.json(); } catch { return NextResponse.json({ error: "Enter a rating and written feedback." }, { status: 400 }); }
   const input = schema.safeParse(raw);
   if (!input.success) return NextResponse.json({ error: input.error.issues[0]?.message ?? "Check your feedback and try again." }, { status: 400 });
-  const { data: event } = await supabase.from("events").select("id,ends_at,status").eq("id", id).maybeSingle();
-  if (!event) return NextResponse.json({ error: "Event not found." }, { status: 404 });
-  if (event.status === "cancelled") return NextResponse.json({ error: "Feedback is not available for cancelled events." }, { status: 409 });
-  if (Date.parse(event.ends_at) > Date.now()) return NextResponse.json({ error: "Feedback opens after the event ends." }, { status: 409 });
-  const { data, error } = await supabase.from("event_feedback").insert({ event_id: id, user_id: user.id, rating: input.data.rating, comments: input.data.comments }).select("id").single();
-  if (error) return NextResponse.json({ error: error.code === "42501" ? "You cannot submit feedback for this event." : "Feedback could not be saved. Please try again." }, { status: error.code === "42501" ? 403 : 400 });
-  return NextResponse.json({ ok: true, feedbackId: data.id }, { status: 201 });
+  const { data, error } = await supabase.rpc("submit_event_feedback", { p_event_id: id, p_rating: input.data.rating, p_comments: input.data.comments });
+  if (error) {
+    if (error.code === "23505") return NextResponse.json({ error: "You already submitted feedback for this event." }, { status: 409 });
+    const status = error.code === "P0002" ? 404 : error.code === "42501" ? 403 : error.code === "P0001" ? 409 : 400;
+    return NextResponse.json({ error: error.message || "Feedback could not be saved. Please try again." }, { status });
+  }
+  return NextResponse.json({ ok: true, feedbackId: data }, { status: 201 });
 }

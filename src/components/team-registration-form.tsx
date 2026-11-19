@@ -81,6 +81,8 @@ export function TeamRegistrationForm({ event, profile, preflight }: { event: Eve
       const response = await fetch(`/api/events/${event.id}/register-team`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ teamName, memberEmails: selected, phone }) });
       const body = await response.json();
       if (!response.ok) { setError(body.error ?? "Team registration could not be completed."); return; }
+      if (body.checkoutUrl) { window.location.assign(body.checkoutUrl); return; }
+      if (body.paymentRequired) { setError("Payment checkout was not started. Please try again."); return; }
       setResult(body as { registrationId: string; status: string; paymentRequired: boolean; teamSize: number });
     } catch { setError("Could not reach RADES. Check your connection and try again."); }
     finally { setBusy(false); }

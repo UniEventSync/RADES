@@ -15,4 +15,13 @@ export const emailTemplates = {
       text: `Your registration is confirmed for ${event.title}. When: ${starts} – ${ends} PKT. Where: ${event.venue}. View event: ${event.eventUrl}`,
     };
   },
+  ticketInformation: (ticket: { eventTitle: string; holder: string; startsAt: string; endsAt: string; venue: string; ticketUrl: string }) => {
+    const starts = new Date(ticket.startsAt).toLocaleString("en-PK", { dateStyle: "full", timeStyle: "short", timeZone: "Asia/Karachi" });
+    const ends = new Date(ticket.endsAt).toLocaleTimeString("en-PK", { timeStyle: "short", timeZone: "Asia/Karachi" });
+    return {
+      subject: `Your RADES ticket: ${ticket.eventTitle}`,
+      html: shell(`<h1 style="font-size:22px">Your digital event ticket</h1><p style="font-size:15px;line-height:1.7;color:#475569">Hi ${esc(ticket.holder)}, your individual ticket for <strong>${esc(ticket.eventTitle)}</strong> is attached as a QR code.</p><p style="font-size:14px;line-height:1.8;color:#334155"><strong>When:</strong> ${esc(starts)} – ${esc(ends)} PKT<br><strong>Where:</strong> ${esc(ticket.venue)}</p><p style="font-size:14px;line-height:1.7;color:#475569">Present the attached QR code at event check-in, or open your ticket online. Each team member has a separate ticket.</p><p style="text-align:center"><img src="cid:ticket-qr" width="280" height="280" alt="Your event ticket QR code" style="display:inline-block;width:280px;height:280px"/></p>`, { label: "Open digital ticket", url: ticket.ticketUrl }),
+      text: `Your individual ticket for ${ticket.eventTitle} is attached as a QR code. Holder: ${ticket.holder}. When: ${starts} – ${ends} PKT. Where: ${ticket.venue}. Open ticket: ${ticket.ticketUrl}`,
+    };
+  },
 };

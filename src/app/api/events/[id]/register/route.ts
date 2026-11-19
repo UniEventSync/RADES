@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createOrReuseCheckout } from "@/lib/payments/checkout";
 import { sendRegistrationConfirmationEmails } from "@/lib/email/registration-confirmations";
+import { sendTicketInformationEmails } from "@/lib/email/ticket-information";
 
 type RouteContext = { params: Promise<{ id: string }> };
 const bodySchema = z.object({ phone: z.string().trim().max(20).optional().default("").refine(value => !value || /^\+[1-9]\d{7,14}$/.test(value), "Enter a phone number in international format.") });
@@ -46,9 +47,13 @@ export async function POST(request: Request, { params }: RouteContext) {
     return NextResponse.json({ ...result, checkoutUrl: checkout.checkoutUrl }, { status: 201 });
   }
   let confirmationEmail = { sent: 0, failed: 0, skipped: 0 };
+  let ticketEmail = { sent: 0, failed: 0, skipped: 0 };
   if (result.status === "confirmed") {
-    try { confirmationEmail = await sendRegistrationConfirmationEmails(createAdminClient(), result.registrationId, process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin); }
-    catch (sendError) { console.error("RADES registration confirmation could not be attempted", sendError); confirmationEmail = { sent: 0, failed: 1, skipped: 0 }; }
+    try {
+      const admin = createAdminClient();
+      const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;
+      [confirmationEmail, ticketEmail] = await Promise.all([sendRegistrationConfirmationEmails(admin, result.registrationId, siteUrl), sendTicketInformationEmails(admin, result.registrationId, siteUrl)]);
+    } catch (sendError) { console.error("RADES registration emails could not be attempted", sendError); confirmationEmail = { sent: 0, failed: 1, skipped: 0 }; ticketEmail = { sent: 0, failed: 1, skipped: 0 }; }
   }
-  return NextResponse.json({ ...result, confirmationEmail }, { status: 201 });
+  return NextResponse.json({ ...result, confirmationEmail, ticketEmail }, { status: 201 });
 }

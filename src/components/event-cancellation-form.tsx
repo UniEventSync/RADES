@@ -25,8 +25,11 @@ export function EventCancellationForm({ eventId, hasEligibleRefunds }: { eventId
       const body = await response.json();
       if (!response.ok) { setError(body.error ?? "Cancellation failed."); return; }
       const refunds = body.refunds as RefundSummary | undefined;
-      const message = !refunds?.eligible ? "Event cancelled. No paid registrations need a refund." : refunds.failed ? `Event cancelled. ${refunds.refunded} refunded; ${refunds.pending} pending; ${refunds.failed} need a refund retry.` : `Event cancelled. ${refunds.refunded} refund${refunds.refunded === 1 ? "" : "s"} processed; ${refunds.pending} pending.`;
-      toast(message, refunds?.failed ? "error" : "success");
+      const notification = body.participantNotifications as { sent: number; failed: number } | undefined;
+      const refundMessage = !refunds?.eligible ? "No paid registrations need a refund." : `${refunds.refunded} refunded; ${refunds.pending} pending; ${refunds.failed} failed.`;
+      const notificationMessage = notification ? `${notification.sent} participant cancellation email${notification.sent === 1 ? "" : "s"} sent${notification.failed ? `; ${notification.failed} failed` : ""}.` : "Participant emails could not be confirmed.";
+      const message = `Event cancelled. ${refundMessage} ${notificationMessage}`;
+      toast(message, refunds?.failed || notification?.failed ? "error" : "success");
       router.push(`/admin/events/${eventId}/analytics`);
       router.refresh();
     } catch { setError("Could not reach RADES. Please try again."); }

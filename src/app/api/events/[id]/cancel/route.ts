@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe/server";
 import { processEventRefunds } from "@/lib/payments/event-refunds";
+import { sendEventParticipantNotices } from "@/lib/email/event-participant-notifications";
 
 type Context = { params: Promise<{ id: string }> };
 const bodySchema = z.object({ reason: z.string().trim().min(5).max(1000) });
@@ -37,5 +38,9 @@ export async function POST(request: Request, { params }: Context) {
   const admin = createAdminClient();
   await expirePendingSessions(admin, id);
   const refunds = await processEventRefunds(admin, id);
-  return NextResponse.json({ ok: true, alreadyCancelled: Boolean((data as { alreadyCancelled?: boolean } | null)?.alreadyCancelled), refunds });
+  let participantNotifications = { sent: 0, failed: 0, skipped: 0 };
+  const { data: cancelledEvent } = await admin.from("events").select("cancellation_reason").eq("id", id).maybeSingle();
+  try { participantNotifications = await sendEventParticipantNotices(admin, id, process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin, "event_cancelled", cancelledEvent?.cancellation_reason ?? parsed.data.reason); }
+  catch (noticeError) { console.error("RADES event cancellation notifications could not be sent", noticeError); participantNotifications = { sent: 0, failed: 1, skipped: 0 }; }
+  return NextResponse.json({ ok: true, alreadyCancelled: Boolean((data as { alreadyCancelled?: boolean } | null)?.alreadyCancelled), refunds, participantNotifications });
 }

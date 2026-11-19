@@ -2,20 +2,45 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getStripe } from "@/lib/stripe/server";
+import { processEventRefunds } from "@/lib/payments/event-refunds";
+import { sendEventParticipantNotices } from "@/lib/email/event-participant-notifications";
 
-export async function POST(request: Request, { params }: { params: Promise<{id:string}> }) {
-  const {id}=await params; const body=z.object({reason:z.string().trim().min(5).max(1000)}).safeParse(await request.json());
-  if(!body.success) return NextResponse.json({error:"Add a cancellation reason (at least 5 characters)."},{status:400});
-  const supabase=await createClient(); const {data:{user}}=await supabase.auth.getUser(); if(!user) return NextResponse.json({error:"Sign in required."},{status:401});
-  const {data:event}=await supabase.from("events").select("id,society_id,status,starts_at").eq("id",id).maybeSingle(); if(!event) return NextResponse.json({error:"Event not found."},{status:404});
-  const [{data:profile},{data:membership}]=await Promise.all([supabase.from("profiles").select("global_role").eq("id",user.id).maybeSingle(),supabase.from("society_members").select("id").eq("society_id",event.society_id).eq("user_id",user.id).eq("status","active").maybeSingle()]);
-  const office=profile?.global_role==="office"||profile?.global_role==="super_admin"; const panelist=Boolean(membership);
-  if(!office&&!panelist) return NextResponse.json({error:"You cannot manage this event."},{status:403});
-  if(event.status==="cancelled") return NextResponse.json({error:"This event is already cancelled."},{status:409});
-  if(!office&&Date.parse(event.starts_at)<=Date.now()) return NextResponse.json({error:"Only OSSIE can force-cancel an event after it has started."},{status:403});
-  const {error}=await supabase.from("events").update({status:"cancelled",cancellation_reason:body.data.reason,cancelled_at:new Date().toISOString(),cancelled_by:user.id}).eq("id",id);
-  if(error) return NextResponse.json({error:error.message},{status:400});
-  const {error:refundError}=await createAdminClient().from("event_refund_transactions").insert({event_id:id,amount_pkr:0,status:"dummy_recorded",note:"Demo placeholder only. No attendee registration or real payment/refund exists.",created_by:user.id});
-  if(refundError) return NextResponse.json({error:`Event cancelled, but the demo refund record could not be written: ${refundError.message}`},{status:500});
-  return NextResponse.json({ok:true,refund:"dummy_recorded"});
+type Context = { params: Promise<{ id: string }> };
+const bodySchema = z.object({ reason: z.string().trim().min(5).max(1000) });
+
+async function expirePendingSessions(admin: ReturnType<typeof createAdminClient>, eventId: string) {
+  try {
+    const stripe = getStripe();
+    const { data: registrations } = await admin.from("registrations").select("id").eq("event_id", eventId).eq("status", "cancelled");
+    if (!registrations?.length) return;
+    const { data: payments } = await admin.from("event_payments").select("checkout_session_id,checkout_expires_at").in("registration_id", registrations.map(row => row.id)).eq("status", "pending").not("checkout_session_id", "is", null);
+    for (const payment of payments ?? []) {
+      if (Date.parse(payment.checkout_expires_at) > Date.now()) await stripe.checkout.sessions.expire(payment.checkout_session_id!).catch(() => undefined);
+    }
+  } catch { /* The held place is already released; an expired-session webhook is a second release path. */ }
+}
+
+export async function POST(request: Request, { params }: Context) {
+  const { id } = await params;
+  let raw: unknown;
+  try { raw = await request.json(); } catch { return NextResponse.json({ error: "Add a cancellation reason." }, { status: 400 }); }
+  const parsed = bodySchema.safeParse(raw);
+  if (!parsed.success) return NextResponse.json({ error: "Add a cancellation reason (at least 5 characters)." }, { status: 400 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
+  const { data, error } = await supabase.rpc("cancel_event_and_queue_refunds", { p_event_id: id, p_reason: parsed.data.reason, p_actor_id: user.id });
+  if (error) {
+    const status = error.code === "42501" ? 403 : error.code === "P0002" ? 404 : 400;
+    return NextResponse.json({ error: error.message }, { status });
+  }
+  const admin = createAdminClient();
+  await expirePendingSessions(admin, id);
+  const refunds = await processEventRefunds(admin, id);
+  let participantNotifications = { sent: 0, failed: 0, skipped: 0 };
+  const { data: cancelledEvent } = await admin.from("events").select("cancellation_reason").eq("id", id).maybeSingle();
+  try { participantNotifications = await sendEventParticipantNotices(admin, id, process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin, "event_cancelled", cancelledEvent?.cancellation_reason ?? parsed.data.reason); }
+  catch (noticeError) { console.error("RADES event cancellation notifications could not be sent", noticeError); participantNotifications = { sent: 0, failed: 1, skipped: 0 }; }
+  return NextResponse.json({ ok: true, alreadyCancelled: Boolean((data as { alreadyCancelled?: boolean } | null)?.alreadyCancelled), refunds, participantNotifications });
 }

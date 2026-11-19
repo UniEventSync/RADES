@@ -1,0 +1,20 @@
+drop function if exists public.claim_registration_email(uuid,text);
+-- Recreate the claim RPC with an explicit resend flag for the ticket's email action.
+create or replace function public.claim_registration_email(p_registration_member_id uuid,p_email_type text,p_force boolean default false)
+returns uuid language plpgsql security definer set search_path='' as $$
+declare delivery_id uuid;
+begin
+  if auth.role()<>'service_role' then raise exception 'Only the server may send registration email.' using errcode='42501'; end if;
+  if p_email_type not in ('registration_confirmation','ticket_information','event_update','event_cancelled') then raise exception 'Invalid registration email type.' using errcode='22023'; end if;
+  if not exists(select 1 from public.registration_members rm join public.registrations r on r.id=rm.registration_id where rm.id=p_registration_member_id and rm.active and r.status='confirmed') then
+    return null;
+  end if;
+  insert into public.registration_email_deliveries(registration_member_id,email_type,status)
+    values(p_registration_member_id,p_email_type,'sending')
+    on conflict(registration_member_id,email_type) do update set status='sending',attempt_count=registration_email_deliveries.attempt_count+1,error_message=null,updated_at=now()
+      where (p_force and registration_email_deliveries.status in ('sent','failed')) or registration_email_deliveries.status='failed' or (registration_email_deliveries.status='sending' and registration_email_deliveries.updated_at<now()-interval '15 minutes')
+    returning id into delivery_id;
+  return delivery_id;
+end $$;
+revoke all on function public.claim_registration_email(uuid,text,boolean) from public,anon,authenticated;
+grant execute on function public.claim_registration_email(uuid,text,boolean) to service_role;

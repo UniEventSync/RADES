@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { STUDENT_EMAIL } from "@/lib/auth/email-rules";
 import { createOrReuseCheckout } from "@/lib/payments/checkout";
+import { sendRegistrationConfirmationEmails } from "@/lib/email/registration-confirmations";
 
 type Context = { params: Promise<{ id: string }> };
 const schema = z.object({
@@ -54,5 +56,10 @@ export async function POST(request: Request, { params }: Context) {
     if ("error" in checkout) return NextResponse.json({ error: checkout.error }, { status: checkout.status });
     return NextResponse.json({ ...result, checkoutUrl: checkout.checkoutUrl }, { status: 201 });
   }
-  return NextResponse.json(data, { status: 201 });
+  let confirmationEmail = { sent: 0, failed: 0, skipped: 0 };
+  if (result.status === "confirmed") {
+    try { confirmationEmail = await sendRegistrationConfirmationEmails(createAdminClient(), result.registrationId, process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin); }
+    catch (sendError) { console.error("RADES team confirmation emails could not be attempted", sendError); confirmationEmail = { sent: 0, failed: result.teamSize, skipped: 0 }; }
+  }
+  return NextResponse.json({ ...result, confirmationEmail }, { status: 201 });
 }

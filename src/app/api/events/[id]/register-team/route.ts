@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { STUDENT_EMAIL } from "@/lib/auth/email-rules";
+import { createOrReuseCheckout } from "@/lib/payments/checkout";
 
 type Context = { params: Promise<{ id: string }> };
 const schema = z.object({
@@ -36,8 +37,22 @@ export async function POST(request: Request, { params }: Context) {
     p_event_id: id, p_team_name: input.data.teamName, p_member_emails: emails, p_phone: input.data.phone || null,
   });
   if (error) {
+    if (error.code === "23505") {
+      const { data: pending } = await supabase.from("registrations").select("id").eq("event_id", id).eq("leader_id", user.id).eq("status", "pending_payment").maybeSingle();
+      if (pending) {
+        const checkout = await createOrReuseCheckout(supabase, user, pending.id, request.url);
+        if ("error" in checkout) return NextResponse.json({ error: checkout.error }, { status: checkout.status });
+        return NextResponse.json({ registrationId: pending.id, status: "pending_payment", paymentRequired: true, checkoutUrl: checkout.checkoutUrl }, { status: 200 });
+      }
+    }
     const status = error.code === "42501" ? 403 : error.code === "P0002" ? 404 : ["23505", "23P01", "23514"].includes(error.code ?? "") ? 409 : 400;
     return NextResponse.json({ error: error.message }, { status });
+  }
+  const result = data as { registrationId: string; status: string; paymentRequired: boolean; teamSize: number };
+  if (result.paymentRequired) {
+    const checkout = await createOrReuseCheckout(supabase, user, result.registrationId, request.url);
+    if ("error" in checkout) return NextResponse.json({ error: checkout.error }, { status: checkout.status });
+    return NextResponse.json({ ...result, checkoutUrl: checkout.checkoutUrl }, { status: 201 });
   }
   return NextResponse.json(data, { status: 201 });
 }

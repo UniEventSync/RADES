@@ -30,6 +30,8 @@ export function SoloRegistrationForm({ event, profile, preflight }: { event: Eve
       const response = await fetch(`/api/events/${event.id}/register`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone }) });
       const body = await response.json();
       if (!response.ok) { setError(body.error ?? "Registration could not be completed."); return; }
+      if (body.checkoutUrl) { window.location.assign(body.checkoutUrl); return; }
+      if (body.paymentRequired) { setError("Payment checkout was not started. Please try again."); return; }
       setResult(body as { registrationId: string; status: string; paymentRequired: boolean });
     } catch { setError("Could not reach RADES. Check your connection and try again."); }
     finally { setBusy(false); }

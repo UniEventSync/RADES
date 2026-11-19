@@ -22,5 +22,6 @@ Statuses below are based on reports in this project conversation, not a direct q
 | `202611190001_profile_phone_metadata.sql` | Not applied | Stores optional phone metadata for new profile rows only; does not change existing profile data. |
 | `202611190002_individual_event_registration.sql` | Not applied | Adds race-safe solo registration, participant records, seat capacity checks, duplicate prevention, and schedule-conflict enforcement. Creates new registration tables and an optional registration close time; does not rewrite existing user/profile data. |
 | `202611190003_team_event_registration.sql` | Not applied | Adds per-event team-size settings and atomic team registration with account, duplicate, schedule, and capacity checks. Does not rewrite existing user/profile data. |
+| `202611190004_digital_qr_tickets.sql` | Not applied | Creates one revocable ticket per confirmed registration member, issues tickets on confirmation, voids them on cancellation/refund, and backfills ticket rows for already confirmed registrations. Does not modify user/profile data or passwords. |
 
 Apply migrations in filename order, but do not rerun a migration just because its status is unconfirmed. Verify the current schema or ask the project owner first. The event-rules migration requires every existing society to have a faculty patron before it can complete.

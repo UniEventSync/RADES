@@ -17,6 +17,7 @@ type UserProfile = {
   isSocietyAdmin: boolean;
   isPatron: boolean;
 };
+type TicketSummary = { id: string; eventTitle: string; startsAt: string; venue: string; holder: string };
 
 const field = "mt-1.5 h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-700 focus:ring-4 focus:ring-blue-100";
 
@@ -52,7 +53,7 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
   </dialog>;
 }
 
-export function ProfileEditor({ profile }: { profile: UserProfile }) {
+export function ProfileEditor({ profile, tickets }: { profile: UserProfile; tickets: TicketSummary[] }) {
   const router = useRouter();
   const toast = useToast();
   const [phone, setPhone] = useState(profile.phone);
@@ -90,7 +91,10 @@ export function ProfileEditor({ profile }: { profile: UserProfile }) {
         <form onSubmit={save} className="mt-5 border-t border-slate-100 pt-5"><label htmlFor="profile-phone" className="block text-sm font-semibold">Phone number</label><input id="profile-phone" className={field} type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={event => setPhone(event.target.value)} maxLength={20} placeholder="+923001234567" aria-describedby="phone-hint"/><p id="phone-hint" className="mt-1.5 text-xs text-slate-500">Use international format, for example +923001234567.</p><button type="submit" disabled={busy} className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-wait disabled:opacity-60">{busy ? <LoaderCircle size={16} className="animate-spin"/> : <Check size={16}/>}Save profile details</button></form>
         <button type="button" onClick={() => setPasswordDialog(true)} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:underline"><KeyRound size={16}/>Change password</button>
       </section>
-      <section aria-labelledby="registration-history-title" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><div className="border-b border-slate-200 pb-4"><h2 id="registration-history-title" className="text-lg font-bold">Registration history</h2><p className="mt-1 text-sm text-slate-600">Your upcoming events and past participation.</p></div><div className="mt-5 rounded-xl border border-dashed border-slate-300 p-8 text-center"><h3 className="font-semibold">No registrations yet</h3><p className="mt-1 text-sm text-slate-500">Events you register for will appear here.</p></div></section>
+      <div className="space-y-6">
+      <section aria-labelledby="tickets-title" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><div className="border-b border-slate-200 pb-4"><h2 id="tickets-title" className="text-lg font-bold">Digital tickets</h2><p className="mt-1 text-sm text-slate-600">Each team member has an individual QR pass.</p></div>{tickets.length ? <ul className="mt-4 divide-y divide-slate-100">{tickets.map(ticket => <li key={ticket.id} className="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-0 last:pb-0"><div className="min-w-0"><p className="font-semibold">{ticket.eventTitle}</p><p className="mt-1 text-sm text-slate-600">{ticket.holder} · {new Date(ticket.startsAt).toLocaleDateString("en-PK", { dateStyle: "medium", timeZone: "Asia/Karachi" })} · {ticket.venue}</p></div><a href={`/tickets/${ticket.id}`} className="inline-flex h-10 shrink-0 items-center rounded-lg bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800">View ticket</a></li>)}</ul> : <div className="mt-5 rounded-xl border border-dashed border-slate-300 p-6 text-center"><h3 className="font-semibold">No active tickets</h3><p className="mt-1 text-sm text-slate-500">Confirmed event tickets appear here. Paid tickets appear after payment.</p></div>}</section>
+      <section aria-labelledby="registration-history-title" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><div className="border-b border-slate-200 pb-4"><h2 id="registration-history-title" className="text-lg font-bold">Registration history</h2><p className="mt-1 text-sm text-slate-600">Your upcoming events and past participation.</p></div><div className="mt-5 rounded-xl border border-dashed border-slate-300 p-8 text-center"><h3 className="font-semibold">No registration history available</h3><p className="mt-1 text-sm text-slate-500">Your event history will appear here.</p></div></section>
+      </div>
     </div>
     <PasswordDialog open={passwordDialog} onClose={() => setPasswordDialog(false)}/>
   </div>;

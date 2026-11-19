@@ -15,6 +15,26 @@ export default async function ProfilePage() {
   ]);
   if (!profile) redirect("/");
 
+  const { data: memberships } = await supabase.from("registration_members").select("id,event_id,registration_id,active").eq("user_id", user.id).eq("active", true);
+  const memberRows = memberships ?? [];
+  const [{ data: registrations }, { data: ticketRows }] = memberRows.length ? await Promise.all([
+    supabase.from("registrations").select("id,status").in("id", memberRows.map(row => row.registration_id)).eq("status", "confirmed"),
+    supabase.from("event_tickets").select("id,registration_member_id,status").in("registration_member_id", memberRows.map(row => row.id)).eq("status", "active"),
+  ]) : [{ data: [] }, { data: [] }];
+  const confirmedIds = new Set((registrations ?? []).map(row => row.id));
+  const activeMemberRows = memberRows.filter(row => confirmedIds.has(row.registration_id));
+  const [{ data: ticketEvents }, { data: ticketMembers }] = activeMemberRows.length ? await Promise.all([
+    supabase.from("events").select("id,title,starts_at,venue,status").in("id", [...new Set(activeMemberRows.map(row => row.event_id))]),
+    supabase.from("registration_members").select("id,display_name").in("id", activeMemberRows.map(row => row.id)),
+  ]) : [{ data: [] }, { data: [] }];
+  const activeEvents = new Map((ticketEvents ?? []).filter(event => event.status !== "cancelled").map(event => [event.id, event]));
+  const displayNames = new Map((ticketMembers ?? []).map(row => [row.id, row.display_name]));
+  const tickets = (ticketRows ?? []).flatMap(ticket => {
+    const member = activeMemberRows.find(row => row.id === ticket.registration_member_id);
+    const event = member ? activeEvents.get(member.event_id) : undefined;
+    return member && event ? [{ id: ticket.id, eventTitle: event.title, startsAt: event.starts_at, venue: event.venue, holder: displayNames.get(member.id) ?? profile.first_name + " " + profile.last_name }] : [];
+  });
+
   return <ProfileEditor profile={{
     firstName: profile.first_name,
     lastName: profile.last_name,
@@ -25,5 +45,5 @@ export default async function ProfilePage() {
     phone: profile.phone ?? "",
     isSocietyAdmin: (adminCount ?? 0) > 0,
     isPatron: (patronCount ?? 0) > 0,
-  }} />;
+  }} tickets={tickets} />;
 }

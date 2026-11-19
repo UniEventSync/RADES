@@ -27,8 +27,9 @@ export async function POST(request: Request, { params }: Context) {
   const { data: member } = await supabase.from("registration_members").select("user_id,display_name,email,active,registration_id").eq("id", ticket.registration_member_id).maybeSingle();
   if (!member) return NextResponse.json({ error: "Ticket attendee information is unavailable." }, { status: 404 });
   const { data: actualRegistration } = await supabase.from("registrations").select("status,team_name").eq("id", member.registration_id).maybeSingle();
+  const { data: attendance } = await supabase.from("event_attendance").select("checked_in_at").eq("ticket_id", ticket.id).maybeSingle();
   if (ticket.status !== "active" || !member.active || actualRegistration?.status !== "confirmed" || event.status === "cancelled") {
     return NextResponse.json({ error: "This ticket has been cancelled or is no longer active." }, { status: 409 });
   }
-  return NextResponse.json({ valid: true, ticketId: ticket.id, attendee: member.display_name, email: member.email, teamName: actualRegistration.team_name, event: event.title, eventStatus: event.status });
+  return NextResponse.json({ valid: true, ticketId: ticket.id, attendee: member.display_name, email: member.email, teamName: actualRegistration.team_name, event: event.title, eventStatus: event.status, checkedInAt: attendance?.checked_in_at ?? null });
 }

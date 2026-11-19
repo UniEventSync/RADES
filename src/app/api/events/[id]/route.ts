@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendTrackedEmail } from "@/lib/email/tracked-send";
 import { emailTemplates } from "@/lib/email/templates";
+import { sendEventParticipantNotices } from "@/lib/email/event-participant-notifications";
 import { isUploadedMediaUrl } from "@/lib/storage/media";
 
 const plainText = (min: number, max: number) => z.string().trim().min(min).max(max).refine(value => !/[<>]/.test(value), "HTML markup is not allowed.");
@@ -14,7 +15,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const input = inputSchema.safeParse(await request.json()); if (!input.success) return NextResponse.json({ error: input.error.issues[0]?.message }, { status: 400 });
   if (new Date(input.data.startsAt) <= new Date()) return NextResponse.json({ error: "An event must start in the future." }, { status: 400 });
   if (new Date(input.data.endsAt) <= new Date(input.data.startsAt)) return NextResponse.json({ error: "Choose an end date and time later than the event start." }, { status: 400 });
-  const { data: event } = await supabase.from("events").select("id,society_id,status,image_url,is_public").eq("id", id).maybeSingle();
+  const { data: event } = await supabase.from("events").select("id,society_id,status,image_url,is_public,title,description,category,venue,starts_at,ends_at,capacity,price_pkr,registration_type,team_min,team_max").eq("id", id).maybeSingle();
   if (!event) return NextResponse.json({ error: "Event not found." }, { status: 404 });
   const { data: membership } = await supabase.from("society_members").select("id").eq("society_id", event.society_id).eq("user_id", user.id).eq("status", "active").maybeSingle();
   if (!membership) return NextResponse.json({ error: "You are not assigned as a society admin for this event." }, { status: 403 });
@@ -32,13 +33,26 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (!patrons.length) return NextResponse.json({ error: "This society needs an assigned faculty patron before an event can be submitted." }, { status: 400 });
   }
   const nextStatus = ["pending_ossie", "published", "rejected"].includes(event.status) ? "pending_patron" : input.data.status;
-  const { data: updatedEvent, error } = await supabase.from("events").update({ title: input.data.title, description: input.data.description, category: input.data.category, venue: input.data.venue, starts_at: input.data.startsAt, ends_at: input.data.endsAt, capacity: input.data.capacity, price_pkr: input.data.pricePkr, registration_type: input.data.registrationType, team_min: input.data.teamMin, team_max: input.data.teamMax, image_url: input.data.image_url || event.image_url || null, status: nextStatus, is_public: event.is_public || event.status === "published", rejection_reason: null }).eq("id", id).select("id,image_url").maybeSingle();
+  const { data: updatedEvent, error } = await supabase.from("events").update({ title: input.data.title, description: input.data.description, category: input.data.category, venue: input.data.venue, starts_at: input.data.startsAt, ends_at: input.data.endsAt, capacity: input.data.capacity, price_pkr: input.data.pricePkr, registration_type: input.data.registrationType, team_min: input.data.teamMin, team_max: input.data.teamMax, image_url: input.data.image_url || event.image_url || null, status: nextStatus, is_public: event.is_public || event.status === "published", rejection_reason: null }).eq("id", id).eq("status", event.status).select("id,image_url,updated_at").maybeSingle();
   if (error?.code === "23P01") return NextResponse.json({ error: "This society already has an event scheduled during that time. Choose a different time." }, { status: 409 });
   if (error) return NextResponse.json({ error: error.message }, { status: 403 });
-  if (!updatedEvent) return NextResponse.json({ error: "The event could not be updated. Check that the event workflow migration is applied." }, { status: 403 });
+  if (!updatedEvent) return NextResponse.json({ error: "The event changed while you were editing. Refresh it before saving again." }, { status: 409 });
   if (resubmitting) {
     const url=`${process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin}/dashboard`;
     for(const patron of patrons){const email=patron.profiles?.email;if(email)await sendTrackedEmail({to:email,...emailTemplates.eventSubmitted(input.data.title,url)},{userId:patron.user_id,eventId:id,type:"event_resubmitted_for_patron_review"});}
   }
-  return NextResponse.json({ ok: true });
+  const participantDetailsChanged = event.status === "published" && (
+    event.title !== input.data.title || event.description !== input.data.description || event.category !== input.data.category || event.venue !== input.data.venue ||
+    Date.parse(event.starts_at) !== Date.parse(input.data.startsAt) || Date.parse(event.ends_at) !== Date.parse(input.data.endsAt) || event.capacity !== input.data.capacity ||
+    event.price_pkr !== input.data.pricePkr || event.registration_type !== input.data.registrationType || event.team_min !== input.data.teamMin || event.team_max !== input.data.teamMax
+  );
+  let participantNotifications = { sent: 0, failed: 0, skipped: 0 };
+  if (participantDetailsChanged) {
+    try {
+      const notificationKey = updatedEvent.updated_at;
+      participantNotifications = await sendEventParticipantNotices(createAdminClient(), id, process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin, "event_update", undefined, notificationKey);
+    }
+    catch (noticeError) { console.error("RADES event update notifications could not be sent", noticeError); participantNotifications = { sent: 0, failed: 1, skipped: 0 }; }
+  }
+  return NextResponse.json({ ok: true, participantNotifications });
 }

@@ -20,7 +20,7 @@ export default async function ProfilePage() {
   const [{ data: registrations }, { data: ticketRows }, { data: eventRows }, { data: paymentRows }] = memberRows.length ? await Promise.all([
     supabase.from("registrations").select("id,status,team_name,amount_pkr,created_at").in("id", [...new Set(memberRows.map(row => row.registration_id))]),
     supabase.from("event_tickets").select("id,registration_member_id,status").in("registration_member_id", memberRows.map(row => row.id)),
-    supabase.from("events").select("id,title,starts_at,ends_at,venue,status").in("id", [...new Set(memberRows.map(row => row.event_id))]),
+    supabase.from("events").select("id,title,description,starts_at,ends_at,venue,status").in("id", [...new Set(memberRows.map(row => row.event_id))]),
     supabase.from("event_payments").select("registration_id,status").in("registration_id", [...new Set(memberRows.map(row => row.registration_id))]),
   ]) : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }];
   const allTickets = ticketRows ?? [];
@@ -39,7 +39,8 @@ export default async function ProfilePage() {
     const ticket = ticketsByMember.get(member.id);
     const checkedInAt = ticket ? attendanceByTicket.get(ticket.id) ?? null : null;
     const status = event.status === "cancelled" ? "Event cancelled" : registration.status === "refunded" ? "Refunded" : registration.status === "cancelled" || !member.active ? "Cancelled" : registration.status === "pending_payment" ? "Payment pending" : checkedInAt ? "Checked in" : Date.parse(event.starts_at) > now ? "Upcoming" : Date.parse(event.ends_at) < now ? "Ended · no check-in" : "Registered";
-    return [{ id: member.id, registrationId: member.registration_id, eventId: event.id, title: event.title, startsAt: event.starts_at, venue: event.venue, status, paymentStatus: paymentsByRegistration.get(member.registration_id) ?? null, checkedInAt, ticketId: ticket?.status === "active" && registration.status === "confirmed" && event.status !== "cancelled" ? ticket.id : null, teamName: registration.team_name, amountPkr: registration.amount_pkr, isLeader: member.is_leader }];
+    const ticketId = ticket?.status === "active" && registration.status === "confirmed" && event.status !== "cancelled" ? ticket.id : null;
+    return [{ id: member.id, registrationId: member.registration_id, eventId: event.id, title: event.title, description: event.description, startsAt: event.starts_at, endsAt: event.ends_at, venue: event.venue, status, paymentStatus: paymentsByRegistration.get(member.registration_id) ?? null, checkedInAt, ticketId, calendarEligible: Boolean(ticketId && Date.parse(event.ends_at) > now), teamName: registration.team_name, amountPkr: registration.amount_pkr, isLeader: member.is_leader }];
   });
   const tickets = history.filter(item => item.ticketId).map(item => ({ id: item.ticketId!, eventTitle: item.title, startsAt: item.startsAt, venue: item.venue, holder: profile.first_name + " " + profile.last_name }));
 

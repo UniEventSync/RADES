@@ -1,5 +1,6 @@
 ﻿import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { HomeDashboard, type Society, type ReviewEvent } from "@/components/home-dashboard";
 
 export default async function DashboardPage() {
@@ -39,6 +40,27 @@ export default async function DashboardPage() {
   const events = ((eventResult.data ?? []) as unknown as EventRow[]).map(event => ({ ...event, society: event.societies?.name ?? "IBA Society" }));
   // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
+  let officeCheckIns: number | null = null;
+  let officeCapacity: string | null = null;
+  if (profile.global_role === "office" || profile.global_role === "super_admin") {
+    try {
+      const admin = createAdminClient();
+      const { data: attendance, error: attendanceError } = await admin.from("event_attendance").select("ticket_id");
+      const capacityEvents = events.filter(event => event.status === "published" && Date.parse(event.ends_at) >= now && event.capacity !== null);
+      const eventIds = capacityEvents.map(event => event.id);
+      const { data: registrations, error: registrationsError } = eventIds.length
+        ? await admin.from("registrations").select("event_id,status,member_count,payment_expires_at").in("event_id", eventIds)
+        : { data: [], error: null };
+      if (!attendanceError && !registrationsError) {
+        officeCheckIns = attendance?.length ?? 0;
+        const reservedSeats = (registrations ?? []).filter(row => row.status === "confirmed" || (row.status === "pending_payment" && row.payment_expires_at && Date.parse(row.payment_expires_at) > now)).reduce((sum, row) => sum + row.member_count, 0);
+        const totalCapacity = capacityEvents.reduce((sum, event) => sum + (event.capacity ?? 0), 0);
+        officeCapacity = `${reservedSeats.toLocaleString()} / ${totalCapacity.toLocaleString()}`;
+      }
+    } catch {
+      // Keep the report honest when analytics tables are unavailable or not configured.
+    }
+  }
   const patronSocietyIds = (patronResult.data ?? []).map(row => row.society_id);
-  return <HomeDashboard user={{id:user.id,email:user.email??"",firstName:profile.first_name,lastName:profile.last_name,accountType:profile.account_type,globalRole:profile.global_role}} initialSocieties={societies} initialEvents={events} now={now} patronSocietyIds={patronSocietyIds} />;
+  return <HomeDashboard user={{id:user.id,email:user.email??"",firstName:profile.first_name,lastName:profile.last_name,accountType:profile.account_type,globalRole:profile.global_role}} initialSocieties={societies} initialEvents={events} now={now} patronSocietyIds={patronSocietyIds} officeCheckIns={officeCheckIns} officeCapacity={officeCapacity} />;
 }

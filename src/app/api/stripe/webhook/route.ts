@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe/server";
 import { processEventRefunds } from "@/lib/payments/event-refunds";
 import { sendRegistrationConfirmationEmails } from "@/lib/email/registration-confirmations";
+import { sendTicketInformationEmails } from "@/lib/email/ticket-information";
 
 const registrationIdSchema = z.string().uuid();
 const checkoutEvents = new Set([
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
   if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
     try {
       const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;
-      await sendRegistrationConfirmationEmails(admin, registrationId.data, siteUrl);
+      await Promise.all([sendRegistrationConfirmationEmails(admin, registrationId.data, siteUrl), sendTicketInformationEmails(admin, registrationId.data, siteUrl)]);
     } catch (sendError) { console.error("RADES paid registration confirmation email could not be attempted", sendError); }
   }
 

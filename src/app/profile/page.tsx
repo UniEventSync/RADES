@@ -15,25 +15,31 @@ export default async function ProfilePage() {
   ]);
   if (!profile) redirect("/");
 
-  const { data: memberships } = await supabase.from("registration_members").select("id,event_id,registration_id,active").eq("user_id", user.id).eq("active", true);
+  const { data: memberships } = await supabase.from("registration_members").select("id,event_id,registration_id,active,is_leader,display_name,created_at").eq("user_id", user.id).order("created_at", { ascending: false });
   const memberRows = memberships ?? [];
-  const [{ data: registrations }, { data: ticketRows }] = memberRows.length ? await Promise.all([
-    supabase.from("registrations").select("id,status").in("id", memberRows.map(row => row.registration_id)).eq("status", "confirmed"),
-    supabase.from("event_tickets").select("id,registration_member_id,status").in("registration_member_id", memberRows.map(row => row.id)).eq("status", "active"),
-  ]) : [{ data: [] }, { data: [] }];
-  const confirmedIds = new Set((registrations ?? []).map(row => row.id));
-  const activeMemberRows = memberRows.filter(row => confirmedIds.has(row.registration_id));
-  const [{ data: ticketEvents }, { data: ticketMembers }] = activeMemberRows.length ? await Promise.all([
-    supabase.from("events").select("id,title,starts_at,venue,status").in("id", [...new Set(activeMemberRows.map(row => row.event_id))]),
-    supabase.from("registration_members").select("id,display_name").in("id", activeMemberRows.map(row => row.id)),
-  ]) : [{ data: [] }, { data: [] }];
-  const activeEvents = new Map((ticketEvents ?? []).filter(event => event.status !== "cancelled").map(event => [event.id, event]));
-  const displayNames = new Map((ticketMembers ?? []).map(row => [row.id, row.display_name]));
-  const tickets = (ticketRows ?? []).flatMap(ticket => {
-    const member = activeMemberRows.find(row => row.id === ticket.registration_member_id);
-    const event = member ? activeEvents.get(member.event_id) : undefined;
-    return member && event ? [{ id: ticket.id, eventTitle: event.title, startsAt: event.starts_at, venue: event.venue, holder: displayNames.get(member.id) ?? profile.first_name + " " + profile.last_name }] : [];
+  const [{ data: registrations }, { data: ticketRows }, { data: eventRows }] = memberRows.length ? await Promise.all([
+    supabase.from("registrations").select("id,status,team_name,amount_pkr,created_at").in("id", [...new Set(memberRows.map(row => row.registration_id))]),
+    supabase.from("event_tickets").select("id,registration_member_id,status").in("registration_member_id", memberRows.map(row => row.id)),
+    supabase.from("events").select("id,title,starts_at,ends_at,venue,status").in("id", [...new Set(memberRows.map(row => row.event_id))]),
+  ]) : [{ data: [] }, { data: [] }, { data: [] }];
+  const allTickets = ticketRows ?? [];
+  const { data: attendanceRows } = allTickets.length ? await supabase.from("event_attendance").select("ticket_id,checked_in_at").in("ticket_id", allTickets.map(row => row.id)) : { data: [] };
+  const registrationsById = new Map((registrations ?? []).map(row => [row.id, row]));
+  const ticketsByMember = new Map(allTickets.map(row => [row.registration_member_id, row]));
+  const eventsById = new Map((eventRows ?? []).map(row => [row.id, row]));
+  const attendanceByTicket = new Map((attendanceRows ?? []).map(row => [row.ticket_id, row.checked_in_at]));
+  // eslint-disable-next-line react-hooks/purity -- This is a request-time server page, not client render state.
+  const now = Date.now();
+  const history = memberRows.flatMap(member => {
+    const registration = registrationsById.get(member.registration_id);
+    const event = eventsById.get(member.event_id);
+    if (!registration || !event) return [];
+    const ticket = ticketsByMember.get(member.id);
+    const checkedInAt = ticket ? attendanceByTicket.get(ticket.id) ?? null : null;
+    const status = event.status === "cancelled" ? "Event cancelled" : registration.status === "refunded" ? "Refunded" : registration.status === "cancelled" || !member.active ? "Cancelled" : registration.status === "pending_payment" ? "Payment pending" : checkedInAt ? "Checked in" : Date.parse(event.starts_at) > now ? "Upcoming" : Date.parse(event.ends_at) < now ? "Ended · no check-in" : "Registered";
+    return [{ id: member.id, registrationId: member.registration_id, eventId: event.id, title: event.title, startsAt: event.starts_at, venue: event.venue, status, checkedInAt, ticketId: ticket?.status === "active" && registration.status === "confirmed" && event.status !== "cancelled" ? ticket.id : null, teamName: registration.team_name, amountPkr: registration.amount_pkr, isLeader: member.is_leader }];
   });
+  const tickets = history.filter(item => item.ticketId).map(item => ({ id: item.ticketId!, eventTitle: item.title, startsAt: item.startsAt, venue: item.venue, holder: profile.first_name + " " + profile.last_name }));
 
   return <ProfileEditor profile={{
     firstName: profile.first_name,
@@ -45,5 +51,5 @@ export default async function ProfilePage() {
     phone: profile.phone ?? "",
     isSocietyAdmin: (adminCount ?? 0) > 0,
     isPatron: (patronCount ?? 0) > 0,
-  }} tickets={tickets} />;
+  }} tickets={tickets} history={history} />;
 }

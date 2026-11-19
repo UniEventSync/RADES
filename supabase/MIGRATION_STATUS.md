@@ -30,5 +30,6 @@ Statuses below are based on reports in this project conversation, not a direct q
 | `202611190009_registration_confirmation_emails.sql` | Not applied | Adds service-only, idempotent email delivery claims and status tracking for per-attendee registration, ticket, and event notifications. Does not modify profile data or passwords. |
 | `202611200010_ticket_information_emails.sql` | Not applied | Enables participant-specific QR ticket email copies and safe explicit resend attempts through the delivery ledger. Does not modify existing profiles or passwords. |
 | `202611200011_event_participant_notifications.sql` | Not applied | Extends delivery claims to allow cancellation emails after registrations are deactivated. Event detail changes notify confirmed participants, and cancellation notifies all affected registrants. |
+| `202611200012_event_feedback.sql` | Not applied | Adds a 1–5 rating and written feedback form with event-manager read access. Eligibility rules and duplicate blocking are added by the following migration. |
 
 Apply migrations in filename order, but do not rerun a migration just because its status is unconfirmed. Verify the current schema or ask the project owner first. The event-rules migration requires every existing society to have a faculty patron before it can complete.

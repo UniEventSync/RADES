@@ -42,3 +42,5 @@ In Google Cloud Console, create an OAuth 2.0 **Web application** client, enable 
 ## Environment variables
 
 Start from `.env.example`. It lists the required application URL and backend keys, optional email sender settings, Stripe test keys, Google OAuth client ID, and seeded development account settings. Keep `.env.local` private and never commit secrets. The backend secret key must remain server-side.
+
+Set `APP_URL` to the deployed site URL for production, such as `https://rades-beryl.vercel.app`. It is a server-side application setting, not a `NEXT_PUBLIC_*` browser variable.

@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   if (error?.code === "23P01") return NextResponse.json({ error: "This society already has an event scheduled during that time. Choose a different time." }, { status: 409 });
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   if (input.data.status === "pending_patron") {
-    const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;
+    const siteUrl = process.env.APP_URL ?? new URL(request.url).origin;
     for (const patron of patrons) { const email = patron.profiles?.email; if (email) await sendTrackedEmail({ to: email, ...emailTemplates.eventSubmitted(input.data.title, `${siteUrl}/dashboard`) }, { userId: patron.user_id, eventId: data.id, type: "event_submitted_for_patron_review" }); }
   }
   return NextResponse.json({ id: data.id }, { status: 201 });

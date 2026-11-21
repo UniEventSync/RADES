@@ -14,7 +14,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!member) return NextResponse.json({ error: "This ticket does not belong to your account." }, { status: 403 });
   if (ticket.status !== "active") return NextResponse.json({ error: "This ticket is no longer active." }, { status: 409 });
   try {
-    const result = await sendTicketInformationEmail(createAdminClient(), member.id, process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin, true);
+    const result = await sendTicketInformationEmail(createAdminClient(), member.id, process.env.APP_URL ?? new URL(request.url).origin, true);
     if (result === "skipped") return NextResponse.json({ error: "This ticket is no longer eligible to be emailed." }, { status: 409 });
     if (result === "failed") return NextResponse.json({ error: "Ticket email could not be delivered. Check your email settings or try again." }, { status: 503 });
     return NextResponse.json({ ok: true, testRouted: Boolean(process.env.EMAIL_TEST_RECIPIENT?.trim()) });

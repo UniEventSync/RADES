@@ -76,7 +76,7 @@ export async function PUT(request: Request) {
     }
 
     if (!userId) {
-      const { data: invited, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/auth/callback` });
+      const { data: invited, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, { redirectTo: `${process.env.APP_URL ?? "http://localhost:3000"}/auth/callback` });
       if (inviteError) return NextResponse.json({ error: inviteError.message }, { status: 400 });
       userId = invited.user.id;
     }

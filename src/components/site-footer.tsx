@@ -24,8 +24,13 @@ export function SiteFooter() {
         <a className="mt-4 inline-flex items-center gap-2 text-sm hover:text-white" href="mailto:ossie@iba.edu.pk"><Mail size={16}/> Contact OSSIE <ArrowUpRight size={14}/></a>
       </div>
     </div>
-    <div className="mx-auto mt-9 flex max-w-7xl flex-col gap-2 border-t border-slate-800 pt-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-      <span>RADES · SMCS, IBA Karachi</span><span>© {new Date().getFullYear()} RADES</span>
+    <div className="mx-auto mt-9 flex max-w-7xl flex-col gap-4 border-t border-slate-800 pt-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+      <span>RADES · SMCS, IBA Karachi</span>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <Link className="hover:text-white" href="/privacy">Privacy Policy</Link>
+        <Link className="hover:text-white" href="/terms">Terms of Service</Link>
+        <span>© {new Date().getFullYear()} RADES</span>
+      </div>
     </div>
   </footer>;
 }

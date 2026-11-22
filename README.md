@@ -33,7 +33,9 @@ RADES accepts Stripe test credentials only. In the Stripe Dashboard, switch to *
 stripe listen --forward-to localhost:3000/api/stripe/webhook
 ```
 
-Copy the CLI’s `whsec_…` signing secret to `STRIPE_WEBHOOK_SECRET`. Never use live keys for this project. A standard successful test card is `4242 4242 4242 4242` with a future expiry and any CVC.
+Copy the CLI’s `whsec_…` signing secret to `STRIPE_WEBHOOK_SECRET` for local testing. Never use live keys for this project.
+
+For the deployed website, keep Stripe in **Test mode** and create a test webhook endpoint in Stripe Dashboard: Developers > Webhooks > Add endpoint. Use `https://<your-domain>/api/stripe/webhook` as the endpoint URL, subscribe to `checkout.session.completed`, `checkout.session.expired`, `checkout.session.async_payment_succeeded`, and `checkout.session.async_payment_failed`, then reveal and copy the endpoint’s `whsec_…` signing secret. Set that test endpoint secret as `STRIPE_WEBHOOK_SECRET` in the deployment environment and redeploy. A test endpoint created in Test mode remains usable on the live deployed URL; do not use a live-mode endpoint or live keys.
 
 ### Google Calendar
 

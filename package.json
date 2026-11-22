@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit",
     "db:push": "supabase db push",
     "seed:ossie": "tsx scripts/seed-ossie.ts",
-    "seed:developers": "tsx scripts/seed-developers.ts"
+    "seed:developers": "tsx scripts/seed-developers.ts",
+    "seed:sprint2-students": "tsx scripts/seed-sprint2-students.ts",
+    "db:clear-event-data": "tsx scripts/clear-event-data.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",

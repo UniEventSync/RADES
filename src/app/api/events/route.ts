@@ -25,9 +25,15 @@ export async function POST(request: Request) {
   if (overlap) return NextResponse.json({ error: "This society already has an event scheduled during that time. Choose a different time." }, { status: 409 });
   let patrons: PatronRow[] = [];
   if (input.data.status === "pending_patron") {
-    const { data, error } = await createAdminClient().from("society_patrons").select("user_id,profiles!society_patrons_user_id_fkey(email)").eq("society_id", input.data.societyId);
-    if (error) return NextResponse.json({ error: "Could not check the societyâ€™s patron assignment." }, { status: 500 });
-    patrons = (data ?? []) as unknown as PatronRow[];
+    const admin = createAdminClient();
+    const { data: assignments, error } = await admin.from("society_patrons").select("user_id").eq("society_id", input.data.societyId);
+    if (error) return NextResponse.json({ error: "Could not check the society’s patron assignment." }, { status: 500 });
+    const userIds = (assignments ?? []).map(row => row.user_id);
+    const { data: patronProfiles, error: profilesError } = userIds.length
+      ? await admin.from("profiles").select("id,email").in("id", userIds)
+      : { data: [] as { id: string; email: string }[], error: null };
+    if (profilesError) return NextResponse.json({ error: "Could not load the society’s patron account." }, { status: 500 });
+    patrons = (patronProfiles ?? []).map(profile => ({ user_id: profile.id, profiles: { email: profile.email } }));
     if (!patrons.length) return NextResponse.json({ error: "This society needs an assigned faculty patron before it can submit events." }, { status: 400 });
   }
   const { data, error } = await supabase.from("events").insert({ society_id: input.data.societyId, title: input.data.title, description: input.data.description, category: input.data.category, venue: input.data.venue, starts_at: input.data.startsAt, ends_at: input.data.endsAt, capacity: input.data.capacity ?? null, price_pkr: input.data.pricePkr, registration_type: input.data.registrationType, team_min: input.data.teamMin, team_max: input.data.teamMax, image_url: input.data.image_url || null, status: input.data.status, created_by: user.id }).select("id").single();

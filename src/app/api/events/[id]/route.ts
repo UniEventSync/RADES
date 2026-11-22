@@ -44,7 +44,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (error) return NextResponse.json({ error: error.message }, { status: 403 });
   if (!updatedEvent) return NextResponse.json({ error: "The event changed while you were editing. Refresh it before saving again." }, { status: 409 });
   if (resubmitting) {
-    const url=`${process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin}/dashboard`;
+    const url=`${process.env.APP_URL??new URL(request.url).origin}/dashboard`;
     for(const patron of patrons){const email=patron.profiles?.email;if(email)await sendTrackedEmail({to:email,...emailTemplates.eventSubmitted(input.data.title,url)},{userId:patron.user_id,eventId:id,type:"event_resubmitted_for_patron_review"});}
   }
   const participantDetailsChanged = event.status === "published" && (
@@ -56,7 +56,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (participantDetailsChanged) {
     try {
       const notificationKey = updatedEvent.updated_at;
-      participantNotifications = await sendEventParticipantNotices(createAdminClient(), id, process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin, "event_update", undefined, notificationKey);
+      participantNotifications = await sendEventParticipantNotices(createAdminClient(), id, process.env.APP_URL ?? new URL(request.url).origin, "event_update", undefined, notificationKey);
     }
     catch (noticeError) { console.error("RADES event update notifications could not be sent", noticeError); participantNotifications = { sent: 0, failed: 1, skipped: 0 }; }
   }

@@ -33,7 +33,7 @@ export async function createOrReuseCheckout(supabase: SupabaseClient, user: User
       const session = await stripe.checkout.sessions.retrieve(existingPayment.checkout_session_id);
       if (session.status === "open" && session.url) return { checkoutUrl: session.url };
       if (session.status === "complete") {
-        const site = (process.env.NEXT_PUBLIC_APP_URL ?? new URL(requestUrl).origin).replace(/\/$/, "");
+        const site = (process.env.APP_URL ?? new URL(requestUrl).origin).replace(/\/$/, "");
         return { checkoutUrl: `${site}/checkout/success?session_id=${encodeURIComponent(session.id)}` };
       }
       if (session.status === "open") await stripe.checkout.sessions.expire(session.id);
@@ -55,7 +55,7 @@ export async function createOrReuseCheckout(supabase: SupabaseClient, user: User
     await releaseHold(supabase, row.id);
     return { error: "The event total is outside Stripe’s supported PKR card-payment range.", status: 400 };
   }
-  const site = (process.env.NEXT_PUBLIC_APP_URL ?? new URL(requestUrl).origin).replace(/\/$/, "");
+  const site = (process.env.APP_URL ?? new URL(requestUrl).origin).replace(/\/$/, "");
   const { data: prepared, error: prepareError } = await supabase.rpc("prepare_event_checkout", { p_registration_id: row.id });
   if (prepareError || !prepared?.expiresAt || !prepared?.idempotencyKey) {
     await releaseHold(supabase, row.id);

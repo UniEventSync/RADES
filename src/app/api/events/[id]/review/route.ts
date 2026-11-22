@@ -25,7 +25,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       const targets = new Map<string, { id: string | null; email: string }>();
       for (const recipient of recipients ?? []) if (recipient.email) targets.set(recipient.email.toLowerCase(), { id: recipient.id, email: recipient.email });
       if (configured && !targets.has(configured)) targets.set(configured, { id: null, email: configured });
-      for (const recipient of targets.values()) await sendTrackedEmail({ to: recipient.email, ...emailTemplates.eventApproved(event.title, "awaiting final OSSIE review", `${process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin}/dashboard`) }, { userId: recipient.id, eventId: id, type: "event_pending_ossie" });
+      for (const recipient of targets.values()) await sendTrackedEmail({ to: recipient.email, ...emailTemplates.eventApproved(event.title, "awaiting final OSSIE review", `${process.env.APP_URL ?? new URL(request.url).origin}/dashboard`) }, { userId: recipient.id, eventId: id, type: "event_pending_ossie" });
     } else {
       const [{ data: creator }, { data: admins }] = await Promise.all([
         admin.from("profiles").select("id,email").eq("id", event.created_by).maybeSingle(),
@@ -38,7 +38,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         if (profile?.email) recipients.set(profile.email.toLowerCase(), { id: profile.id, email: profile.email });
       }
       const status = input.data.decision === "rejected" ? "not approved" : "approved and published";
-      for (const recipient of recipients.values()) await sendTrackedEmail({ to: recipient.email, ...emailTemplates.eventApproved(event.title, status, `${process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin}/dashboard`) }, { userId: recipient.id, eventId: id, type: `event_${data}` });
+      for (const recipient of recipients.values()) await sendTrackedEmail({ to: recipient.email, ...emailTemplates.eventApproved(event.title, status, `${process.env.APP_URL ?? new URL(request.url).origin}/dashboard`) }, { userId: recipient.id, eventId: id, type: `event_${data}` });
     }
   } catch (notifyError) { console.error("RADES could not send review notification", notifyError); }
   return NextResponse.json({ ok: true, status: data });

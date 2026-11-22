@@ -100,7 +100,8 @@ begin
     end if;
   end if;
 
-  total_amount := coalesce(event_row.price_pkr,0)::bigint * total_members;
+  -- Event price is a fixed total for the whole team registration.
+  total_amount := coalesce(event_row.price_pkr,0)::bigint;
   if total_amount > 2147483647 then raise exception 'The team ticket total exceeds the supported amount.' using errcode='22003'; end if;
   new_status := case when coalesce(event_row.price_pkr,0)=0 then 'confirmed' else 'pending_payment' end;
   insert into public.registrations(event_id,leader_id,registration_type,team_name,status,member_count,amount_pkr,payment_expires_at)

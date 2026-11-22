@@ -86,9 +86,9 @@ export async function createOrReuseCheckout(supabase: SupabaseClient, user: User
     await releaseHold(supabase, row.id);
     const stripeMessage = error instanceof Error ? error.message : "";
     const detail = stripeMessage.includes("at least 50 cents")
-      ? "The team total is below Stripe’s minimum PKR card-payment amount."
+      ? "The registration total is below Stripe’s minimum PKR card-payment amount."
       : "Stripe rejected the test checkout configuration or account payment settings.";
-    return { error: `${detail} The reserved seats have been released; try again or use a higher event/team total.`, status: 502 };
+    return { error: `${detail} The reserved seats have been released; try again or use a higher event registration total.`, status: 502 };
   }
   if (!session.url) {
     await releaseHold(supabase, row.id);

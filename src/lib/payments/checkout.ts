@@ -51,9 +51,9 @@ export async function createOrReuseCheckout(supabase: SupabaseClient, user: User
     return { error: "The payment hold expired. Register again to reserve a new place.", status: 409 };
   }
   const amountMinor = row.amount_pkr * 100;
-  if (!Number.isSafeInteger(amountMinor) || amountMinor < 50 || amountMinor > 99_999_999) {
+  if (!Number.isSafeInteger(amountMinor) || amountMinor < 5000 || amountMinor > 99_999_999) {
     await releaseHold(supabase, row.id);
-    return { error: "The event total is outside Stripe’s supported PKR card-payment range.", status: 400 };
+    return { error: "The team total must be at least PKR 50 for Stripe card payment.", status: 400 };
   }
   const site = (process.env.APP_URL ?? new URL(requestUrl).origin).replace(/\/$/, "");
   const { data: prepared, error: prepareError } = await supabase.rpc("prepare_event_checkout", { p_registration_id: row.id });
@@ -76,9 +76,18 @@ export async function createOrReuseCheckout(supabase: SupabaseClient, user: User
       cancel_url: `${site}/checkout/cancel?registration_id=${encodeURIComponent(row.id)}`,
       expires_at: Number(prepared.expiresAt),
     }, { idempotencyKey: String(prepared.idempotencyKey) });
-  } catch {
+  } catch (error) {
+    console.error("RADES Stripe Checkout session could not be created", {
+      registrationId: row.id,
+      amountPkr: row.amount_pkr,
+      error: error instanceof Error ? error.message : String(error),
+    });
     await releaseHold(supabase, row.id);
-    return { error: "Stripe could not start test checkout. The reserved seats have been released; try registering again.", status: 502 };
+    const stripeMessage = error instanceof Error ? error.message : "";
+    const detail = stripeMessage.includes("at least 50 cents")
+      ? "The team total is below Stripe’s minimum PKR card-payment amount."
+      : "Stripe rejected the test checkout configuration or account payment settings.";
+    return { error: `${detail} The reserved seats have been released; try again or use a higher event/team total.`, status: 502 };
   }
   if (!session.url) {
     await releaseHold(supabase, row.id);

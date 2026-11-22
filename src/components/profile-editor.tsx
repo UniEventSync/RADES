@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Check, KeyRound, LoaderCircle, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { useToast } from "@/components/toast-provider";
 import { GoogleCalendarButton } from "@/components/google-calendar-button";
+import { ImageUpload } from "@/components/image-upload";
 
 type UserProfile = {
+  id: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -17,6 +20,7 @@ type UserProfile = {
   phone: string;
   isSocietyAdmin: boolean;
   isPatron: boolean;
+  avatarUrl: string;
 };
 type TicketSummary = { id: string; eventTitle: string; startsAt: string; venue: string; holder: string };
 type RegistrationHistoryItem = { id: string; registrationId: string; eventId: string; title: string; description: string; startsAt: string; endsAt: string; venue: string; status: string; paymentStatus: string | null; checkedInAt: string | null; ticketId: string | null; calendarEligible: boolean; feedbackAvailable: boolean; teamName: string | null; amountPkr: number; isLeader: boolean };
@@ -59,11 +63,14 @@ export function ProfileEditor({ profile, tickets, history }: { profile: UserProf
   const router = useRouter();
   const toast = useToast();
   const [phone, setPhone] = useState(profile.phone);
+  const [firstName, setFirstName] = useState(profile.firstName);
+  const [lastName, setLastName] = useState(profile.lastName);
+  const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl);
   const [busy, setBusy] = useState(false);
   const [passwordDialog, setPasswordDialog] = useState(false);
-  const initials = `${profile.firstName[0] ?? ""}${profile.lastName[0] ?? ""}`.toUpperCase() || "R";
+  const initials = `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase() || "R";
   const roles = [
-    profile.accountType === "student" ? "Student" : "Faculty",
+    profile.accountType === "student" ? "Student" : profile.accountType === "faculty" ? "Faculty" : profile.accountType === "developer" ? "Developer" : "Account",
     profile.globalRole === "office" ? "OSSIE" : profile.globalRole === "super_admin" ? "Developer" : null,
     profile.isSocietyAdmin ? "Society admin" : null,
     profile.isPatron ? "Society patron" : null,
@@ -75,10 +82,14 @@ export function ProfileEditor({ profile, tickets, history }: { profile: UserProf
     if (normalizedPhone && !/^\+[1-9]\d{7,14}$/.test(normalizedPhone)) { toast("Enter a phone number in international format, such as +923001234567.", "error"); return; }
     setBusy(true);
     try {
-      const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone: normalizedPhone }) });
+      const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ firstName: firstName.trim(), lastName: lastName.trim(), phone: normalizedPhone, avatarUrl }) });
       const body = await response.json();
       if (!response.ok) { toast(body.error ?? "Your profile could not be saved.", "error"); return; }
-      setPhone(body.phone ?? ""); toast("Profile details saved.", "success"); router.refresh();
+      setFirstName(body.firstName ?? firstName);
+      setLastName(body.lastName ?? lastName);
+      setPhone(body.phone ?? "");
+      setAvatarUrl(body.avatarUrl ?? "");
+      toast("Profile details saved.", "success"); router.refresh();
     } catch { toast("Could not reach RADES. Check your connection and try again.", "error"); }
     finally { setBusy(false); }
   };
@@ -87,10 +98,14 @@ export function ProfileEditor({ profile, tickets, history }: { profile: UserProf
     <div className="mb-6"><p className="text-sm font-semibold text-blue-700">Your account</p><h1 className="mt-1 text-3xl font-bold tracking-tight">Profile</h1><p className="mt-2 text-sm text-slate-600">Manage your contact details and view your RADES activity.</p></div>
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(280px,.8fr)_minmax(0,1.5fr)]">
       <section aria-labelledby="profile-card-title" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <div className="flex items-center gap-4"><div aria-hidden="true" className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xl font-bold text-blue-900">{initials}</div><div className="min-w-0"><h2 id="profile-card-title" className="truncate text-xl font-bold">{profile.firstName} {profile.lastName}</h2><p className="truncate text-sm text-slate-600">{profile.email}</p></div></div>
+        <div className="flex items-center gap-4"><div aria-hidden="true" className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-xl font-bold text-blue-900">{avatarUrl ? <Image src={avatarUrl} alt="" fill unoptimized sizes="64px" className="object-cover"/> : initials}</div><div className="min-w-0"><h2 id="profile-card-title" className="truncate text-xl font-bold">{firstName} {lastName}</h2><p className="truncate text-sm text-slate-600">{profile.email}</p></div></div>
         <div className="mt-5 flex flex-wrap gap-2">{roles.map(role => <span key={role} className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-800">{role}</span>)}</div>
-        <dl className="mt-5 space-y-3 border-t border-slate-100 pt-5 text-sm"><div className="flex justify-between gap-4"><dt className="text-slate-500">IBA email</dt><dd className="truncate font-medium" title={profile.email}>{profile.email}</dd></div><div className="flex justify-between gap-4"><dt className="text-slate-500">Student ID</dt><dd className="font-medium">{profile.erpNumber ?? "Faculty account"}</dd></div></dl>
-        <form onSubmit={save} className="mt-5 border-t border-slate-100 pt-5"><label htmlFor="profile-phone" className="block text-sm font-semibold">Phone number</label><input id="profile-phone" className={field} type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={event => setPhone(event.target.value)} maxLength={20} placeholder="+923001234567" aria-describedby="phone-hint"/><p id="phone-hint" className="mt-1.5 text-xs text-slate-500">Use international format, for example +923001234567.</p><button type="submit" disabled={busy} className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-wait disabled:opacity-60">{busy ? <LoaderCircle size={16} className="animate-spin"/> : <Check size={16}/>}Save profile details</button></form>
+        <dl className="mt-5 space-y-3 border-t border-slate-100 pt-5 text-sm"><div className="flex justify-between gap-4"><dt className="text-slate-500">IBA email</dt><dd className="truncate font-medium" title={profile.email}>{profile.email}</dd></div><div className="flex justify-between gap-4"><dt className="text-slate-500">Student ID</dt><dd className="font-medium">{profile.erpNumber ?? (profile.accountType === "student" ? "Unavailable" : "Not applicable")}</dd></div></dl>
+        <form onSubmit={save} className="mt-5 border-t border-slate-100 pt-5 space-y-4">
+          <ImageUpload kind="profile-avatars" entityId={profile.id} value={avatarUrl} onChange={setAvatarUrl}/>
+          <div className="grid gap-3 sm:grid-cols-2"><label className="block text-sm font-semibold">First name<input className={field} value={firstName} onChange={event => setFirstName(event.target.value)} minLength={1} maxLength={60} required/></label><label className="block text-sm font-semibold">Last name<input className={field} value={lastName} onChange={event => setLastName(event.target.value)} minLength={1} maxLength={60} required/></label></div>
+          <label htmlFor="profile-phone" className="block text-sm font-semibold">Phone number</label><input id="profile-phone" className={field} type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={event => setPhone(event.target.value)} maxLength={20} placeholder="+923001234567" aria-describedby="phone-hint"/><p id="phone-hint" className="mt-1.5 text-xs text-slate-500">Use international format, for example +923001234567.</p><button type="submit" disabled={busy} className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-wait disabled:opacity-60">{busy ? <LoaderCircle size={16} className="animate-spin"/> : <Check size={16}/>}Save profile details</button>
+        </form>
         <button type="button" onClick={() => setPasswordDialog(true)} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:underline"><KeyRound size={16}/>Change password</button>
       </section>
       <div className="space-y-6">

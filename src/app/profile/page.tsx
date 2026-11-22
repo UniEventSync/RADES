@@ -9,7 +9,7 @@ export default async function ProfilePage() {
   if (!user) redirect("/sign-in?next=/profile");
 
   const [{ data: profile }, { count: adminCount }, { count: patronCount }] = await Promise.all([
-    supabase.from("profiles").select("first_name,last_name,email,erp_number,account_type,global_role,phone").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("first_name,last_name,email,erp_number,account_type,global_role,phone,avatar_url").eq("id", user.id).maybeSingle(),
     supabase.from("society_members").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "active"),
     supabase.from("society_patrons").select("id", { count: "exact", head: true }).eq("user_id", user.id),
   ]);
@@ -45,6 +45,7 @@ export default async function ProfilePage() {
   const tickets = history.filter(item => item.ticketId).map(item => ({ id: item.ticketId!, eventTitle: item.title, startsAt: item.startsAt, venue: item.venue, holder: profile.first_name + " " + profile.last_name }));
 
   return <ProfileEditor profile={{
+    id: user.id,
     firstName: profile.first_name,
     lastName: profile.last_name,
     email: profile.email,
@@ -52,6 +53,7 @@ export default async function ProfilePage() {
     accountType: profile.account_type,
     globalRole: profile.global_role,
     phone: profile.phone ?? "",
+    avatarUrl: profile.avatar_url ?? "",
     isSocietyAdmin: (adminCount ?? 0) > 0,
     isPatron: (patronCount ?? 0) > 0,
   }} tickets={tickets} history={history} />;

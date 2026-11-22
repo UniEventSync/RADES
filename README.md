@@ -56,9 +56,9 @@ Install the [Stripe CLI](https://docs.stripe.com/stripe-cli), authenticate it wi
 stripe listen --forward-to localhost:3000/api/stripe/webhook
 ```
 
-Copy the CLI listener’s `whsec_…` signing secret into `STRIPE_WEBHOOK_SECRET`, then run the app and complete a test payment.
+Copy the CLI listener’s `whsec_…` signing secret into `STRIPE_WEBHOOK_SECRET`, then run the app and complete a test payment. Never use live keys for this project.
 
-For a Vercel deployment, create a Stripe test webhook endpoint for `https://<your-vercel-domain>/api/stripe/webhook`, subscribe to `checkout.session.completed`, `checkout.session.expired`, `checkout.session.async_payment_succeeded`, and `checkout.session.async_payment_failed`, and set the endpoint signing secret as `STRIPE_WEBHOOK_SECRET`. Redeploy after changing environment variables.
+For the deployed website, keep Stripe in **Test mode** and create a test webhook endpoint in Stripe Dashboard: Developers > Webhooks > Add endpoint. Use `https://<your-domain>/api/stripe/webhook` as the endpoint URL, subscribe to `checkout.session.completed`, `checkout.session.expired`, `checkout.session.async_payment_succeeded`, and `checkout.session.async_payment_failed`, then reveal and copy the endpoint’s `whsec_…` signing secret. Set that test endpoint secret as `STRIPE_WEBHOOK_SECRET` in the deployment environment and redeploy. A test endpoint created in Test mode remains usable on the live deployed URL; do not use a live-mode endpoint or live keys.
 
 ### Google Calendar
 

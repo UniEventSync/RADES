@@ -27,9 +27,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   let patrons: Array<{user_id:string;profiles:{email?:string}|null}> = [];
   const resubmitting = input.data.status === "pending_patron" && (event.status === "draft" || event.status === "pending_ossie" || event.status === "rejected" || event.status === "published");
   if (input.data.status === "pending_patron") {
-    const { data, error } = await createAdminClient().from("society_patrons").select("user_id,profiles!society_patrons_user_id_fkey(email)").eq("society_id", event.society_id);
+    const admin = createAdminClient();
+    const { data: assignments, error } = await admin.from("society_patrons").select("user_id").eq("society_id", event.society_id);
     if (error) return NextResponse.json({ error: "Could not check this society’s patron assignment." }, { status: 500 });
-    patrons=(data??[]) as unknown as typeof patrons;
+    const userIds = (assignments ?? []).map(row => row.user_id);
+    const { data: patronProfiles, error: profilesError } = userIds.length
+      ? await admin.from("profiles").select("id,email").in("id", userIds)
+      : { data: [] as { id: string; email: string }[], error: null };
+    if (profilesError) return NextResponse.json({ error: "Could not load this society’s patron account." }, { status: 500 });
+    patrons = (patronProfiles ?? []).map(profile => ({ user_id: profile.id, profiles: { email: profile.email } }));
     if (!patrons.length) return NextResponse.json({ error: "This society needs an assigned faculty patron before an event can be submitted." }, { status: 400 });
   }
   const nextStatus = ["pending_ossie", "published", "rejected"].includes(event.status) ? "pending_patron" : input.data.status;

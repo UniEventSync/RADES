@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendTrackedEmail } from "@/lib/email/tracked-send";
 import { emailTemplates } from "@/lib/email/templates";
 import { isUploadedMediaUrl } from "@/lib/storage/media";
+import { STRIPE_MIN_REGISTRATION_PKR } from "@/lib/payments/constants";
 
 const plainText = (min: number, max: number) => z.string().trim().min(min).max(max).refine(value => !/[<>]/.test(value), "HTML markup is not allowed.");
 const eventInput = z.object({ societyId: z.string().uuid(), title: plainText(3,150), description: plainText(10,8000), category: plainText(2,50), venue: plainText(2,200), startsAt: z.string().datetime({ offset: true }), endsAt: z.string().datetime({ offset: true }), capacity: z.number().int().positive().nullable().optional(), pricePkr: z.number().int().min(0).default(0), registrationType: z.enum(["solo", "team"]).default("solo"), teamMin: z.number().int().min(2).max(50).default(2), teamMax: z.number().int().min(2).max(50).default(5), image_url: z.string().trim().url().refine(isUploadedMediaUrl).or(z.literal("")).optional(), status: z.enum(["draft", "pending_patron"]).default("pending_patron") }).refine(value => value.teamMin <= value.teamMax, { message: "Maximum team size must be at least the minimum team size.", path: ["teamMax"] });
@@ -16,6 +17,7 @@ export async function POST(request: Request) {
   const input = eventInput.safeParse(await request.json());
   if (!input.success) return NextResponse.json({ error: input.error.issues[0]?.message ?? "Check the event details." }, { status: 400 });
   if (new Date(input.data.startsAt) <= new Date()) return NextResponse.json({ error: "An event must start in the future." }, { status: 400 });
+  if (input.data.pricePkr > 0 && input.data.pricePkr < STRIPE_MIN_REGISTRATION_PKR) return NextResponse.json({ error: `Paid event registration must be at least PKR ${STRIPE_MIN_REGISTRATION_PKR} per person. Use 0 for a free event.` }, { status: 400 });
   if (new Date(input.data.endsAt) <= new Date(input.data.startsAt)) return NextResponse.json({ error: "Choose an end date and time later than the event start." }, { status: 400 });
   const { data: membership, error: membershipError } = await supabase.from("society_members").select("id").eq("society_id", input.data.societyId).eq("user_id", user.id).eq("status", "active").maybeSingle();
   if (membershipError) return NextResponse.json({ error: "Could not verify your society admin assignment." }, { status: 500 });

@@ -46,7 +46,7 @@ Use these details only in Stripe Checkout:
 | Declined payment | `4000 0000 0000 0002` | Any future date | Any 3 digits | Any 5 digits |
 | Insufficient funds | `4000 0000 0000 9995` | Any future date | Any 3 digits | Any 5 digits |
 
-RADES creates Checkout Sessions in PKR and allows card payments only. The per-person paid ticket price must be at least PKR 150; team totals are calculated automatically from the confirmed team size. The maximum event total is PKR 999,999.99.
+RADES creates Checkout Sessions in PKR and allows card payments only. The event registration price is a fixed total for the registration, whether solo or team; paid registrations must be at least PKR 50 and no more than PKR 999,999.99.
 
 #### Local webhook testing
 

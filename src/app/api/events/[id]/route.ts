@@ -15,7 +15,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (!user) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   const input = inputSchema.safeParse(await request.json()); if (!input.success) return NextResponse.json({ error: input.error.issues[0]?.message }, { status: 400 });
   if (new Date(input.data.startsAt) <= new Date()) return NextResponse.json({ error: "An event must start in the future." }, { status: 400 });
-  if (input.data.pricePkr > 0 && input.data.pricePkr < STRIPE_MIN_REGISTRATION_PKR) return NextResponse.json({ error: `Paid event registration must be at least PKR ${STRIPE_MIN_REGISTRATION_PKR} per person. Use 0 for a free event.` }, { status: 400 });
+  if (input.data.pricePkr > 0 && input.data.pricePkr < STRIPE_MIN_REGISTRATION_PKR) return NextResponse.json({ error: `Paid event registration must be at least PKR ${STRIPE_MIN_REGISTRATION_PKR} total. Use 0 for a free event.` }, { status: 400 });
   if (new Date(input.data.endsAt) <= new Date(input.data.startsAt)) return NextResponse.json({ error: "Choose an end date and time later than the event start." }, { status: 400 });
   const { data: event } = await supabase.from("events").select("id,society_id,status,image_url,is_public,title,description,category,venue,starts_at,ends_at,capacity,price_pkr,registration_type,team_min,team_max").eq("id", id).maybeSingle();
   if (!event) return NextResponse.json({ error: "Event not found." }, { status: 404 });

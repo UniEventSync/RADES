@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   const input = eventInput.safeParse(await request.json());
   if (!input.success) return NextResponse.json({ error: input.error.issues[0]?.message ?? "Check the event details." }, { status: 400 });
   if (new Date(input.data.startsAt) <= new Date()) return NextResponse.json({ error: "An event must start in the future." }, { status: 400 });
-  if (input.data.pricePkr > 0 && input.data.pricePkr < STRIPE_MIN_REGISTRATION_PKR) return NextResponse.json({ error: `Paid event registration must be at least PKR ${STRIPE_MIN_REGISTRATION_PKR} per person. Use 0 for a free event.` }, { status: 400 });
+  if (input.data.pricePkr > 0 && input.data.pricePkr < STRIPE_MIN_REGISTRATION_PKR) return NextResponse.json({ error: `Paid event registration must be at least PKR ${STRIPE_MIN_REGISTRATION_PKR} total. Use 0 for a free event.` }, { status: 400 });
   if (new Date(input.data.endsAt) <= new Date(input.data.startsAt)) return NextResponse.json({ error: "Choose an end date and time later than the event start." }, { status: 400 });
   const { data: membership, error: membershipError } = await supabase.from("society_members").select("id").eq("society_id", input.data.societyId).eq("user_id", user.id).eq("status", "active").maybeSingle();
   if (membershipError) return NextResponse.json({ error: "Could not verify your society admin assignment." }, { status: 500 });

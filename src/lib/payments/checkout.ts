@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { getStripe } from "@/lib/stripe/server";
+import { STRIPE_MIN_REGISTRATION_PKR } from "@/lib/payments/constants";
 
 type Registration = { id: string; event_id: string; leader_id: string; status: string; amount_pkr: number; payment_expires_at: string | null };
 type CheckoutResult = { checkoutUrl: string } | { error: string; status: number };
@@ -51,9 +52,9 @@ export async function createOrReuseCheckout(supabase: SupabaseClient, user: User
     return { error: "The payment hold expired. Register again to reserve a new place.", status: 409 };
   }
   const amountMinor = row.amount_pkr * 100;
-  if (!Number.isSafeInteger(amountMinor) || amountMinor < 5000 || amountMinor > 99_999_999) {
+  if (!Number.isSafeInteger(amountMinor) || amountMinor < STRIPE_MIN_REGISTRATION_PKR * 100 || amountMinor > 99_999_999) {
     await releaseHold(supabase, row.id);
-    return { error: "The team total must be at least PKR 50 for Stripe card payment.", status: 400 };
+    return { error: `The registration total must be at least PKR ${STRIPE_MIN_REGISTRATION_PKR} for Stripe card payment.`, status: 400 };
   }
   const site = (process.env.APP_URL ?? new URL(requestUrl).origin).replace(/\/$/, "");
   const { data: prepared, error: prepareError } = await supabase.rpc("prepare_event_checkout", { p_registration_id: row.id });

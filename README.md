@@ -53,7 +53,7 @@ RADES creates Checkout Sessions in PKR and allows card payments only. The event 
 Install the [Stripe CLI](https://docs.stripe.com/stripe-cli), authenticate it with test-mode access, and run:
 
 ```powershell
-stripe listen --forward-to localhost:3000/api/stripe/webhook
+stripe listen --forward-to localhost:3000/api/stripe/webhook --events checkout.session.completed,checkout.session.expired,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed
 ```
 
 Copy the CLI listener’s `whsec_…` signing secret into `STRIPE_WEBHOOK_SECRET`, then run the app and complete a test payment. Never use live keys for this project.

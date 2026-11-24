@@ -7,7 +7,7 @@ import type { EventItem } from "@/lib/events/demo";
 
 export default async function EditEventPage({params}:{params:Promise<{id:string}>}) {
   const {id}=await params;const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect(`/sign-in?next=/admin/events/${id}/edit`);
-  const {data:event}=await supabase.from("events").select("id,society_id,title,description,category,venue,starts_at,ends_at,status,capacity,price_pkr,registration_type,team_min,team_max,image_url,rejection_reason").eq("id",id).maybeSingle();if(!event)notFound();
+  const {data:event}=await supabase.from("events").select("id,society_id,title,description,category,subcategory,venue,venues,starts_at,ends_at,status,capacity,price_pkr,registration_type,team_min,team_max,image_url,rejection_reason").eq("id",id).maybeSingle();if(!event)notFound();
   const {data:member}=await supabase.from("society_members").select("society_id").eq("society_id",event.society_id).eq("user_id",user.id).eq("status","active").maybeSingle();if(!member)redirect("/events");
   if(!["draft","pending_patron","pending_ossie","rejected","published"].includes(event.status))redirect(`/admin?society=${event.society_id}`);
   const {data:members}=await supabase.from("society_members").select("society_id,societies(id,name)").eq("user_id",user.id).eq("status","active");

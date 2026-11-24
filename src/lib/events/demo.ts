@@ -1,6 +1,7 @@
 export type EventItem = {
-  id: string; title: string; description: string; society: string; category: string;
+  id: string; title: string; description: string; society: string; category: string; subcategory?: string;
   venue: string; starts_at: string; ends_at: string; status: string;
+  venues?: string[];
   capacity?: number | null;
   price_pkr?: number;
   registration_type?: "solo" | "team";

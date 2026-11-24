@@ -1,556 +1,76 @@
-# Low-Fidelity Desktop & Mobile Wireframe Guide for RADES
-
-ASCII wireframe layouts, desktop (wide view) first, with notes on how each screen adapts to mobile. Covers every RADES screen defined in the SRS.
-
-## 1. Authentication & User Profile Screens
-
-### 1.1 Sign-Up Screen (/signup)
-
-**Desktop View**
-
-```text
-+-----------------------------------------------------------------------------------------+
-| RADES (Logo)                                                  [ Sign In ]  [ Help ]     |
-+-----------------------------------------------------------------------------------------+
-|                                                                                         |
-|                                     Create Account                                      |
-|                             Sign up with your IBA Email                                 |
-|                                                                                         |
-|         +---------------------------------------------------------------------+         |
-|         | Full Name                                                           |         |
-|         | [_________________________________________________________________] |         |
-|         |                                                                     |         |
-|         | IBA Email Address                                                   |         |
-|         | [_________________________________________________________________] |         |
-|         |                                                                     |         |
-|         | Password                                 Confirm Password           |         |
-|         | [_______________________]                [_______________________]  |         |
-|         |                                                                     |         |
-|         | ERP / Student ID                         Phone Number               |         |
-|         | [_______________________]                [_______________________]  |         |
-|         |                                                                     |         |
-|         | [                     Create Account                      ]         |         |
-|         +---------------------------------------------------------------------+         |
-|                                                                                         |
-|                             Already have an account? [Sign In]                          |
-+-----------------------------------------------------------------------------------------+
-```
-
-*Mobile: stack all inputs vertically into a single column.*
-
-### 1.2 Sign-In Screen (/signin)
-
-**Desktop View**
-
-```text
-+-----------------------------------------------------------------------------------------+
-| RADES (Logo)                                                                            |
-+-----------------------------------------------------------------------------------------+
-|                                                                                         |
-|                                      Welcome Back                                       |
-|                                                                                         |
-|         +---------------------------------------------------------------------+         |
-|         | IBA Email Address                                                   |         |
-|         | [_________________________________________________________________] |         |
-|         |                                                                     |         |
-|         | Password                                                            |         |
-|         | [_________________________________________________________________] |         |
-|         |                                                                     |         |
-|         | [x] Remember me for 30 days                      [Forgot Password?] |         |
-|         |                                                                     |         |
-|         | [                       Sign In                           ]         |         |
-|         +---------------------------------------------------------------------+         |
-|                                                                                         |
-|                            Don't have an account? [Sign Up]                             |
-+-----------------------------------------------------------------------------------------+
-```
-
-### 1.3 Forgot / Reset Password Screen (/forgot-password)
-
-**Desktop View**
-
-```text
-+-----------------------------------------------------------------------------------------+
-| RADES (Logo)                                                         [ Back to Sign In ] |
-+-----------------------------------------------------------------------------------------+
-|                                                                                         |
-|                                     Reset Password                                      |
-|               Enter your institutional email to receive a password reset link.          |
-|                                                                                         |
-|         +---------------------------------------------------------------------+         |
-|         | Institutional Email Address                                         |         |
-|         | [_________________________________________________________________] |         |
-|         |                                                                     |         |
-|         | [                    Send Reset Link                      ]         |         |
-|         +---------------------------------------------------------------------+         |
-+-----------------------------------------------------------------------------------------+
-```
-
-### 1.4 Student Profile & Registration History (/profile)
-
-**Desktop View**
-
-```text
-+-----------------------------------------------------------------------------------------+
-| RADES   [Explore] [My Tickets] [Societies]                [ Notifications (3) ] [User v]|
-+-----------------------------------------------------------------------------------------+
-|                                                                                         |
-|  +-------------------------------+  +-------------------------------------------------+ |
-|  | [ Profile Picture ]           |  | Registration History                            | |
-|  |                               |  | [ All ]  [ Upcoming ]  [ Attended ]  [ Canceled]| |
-|  | Abdullah Tariq                |  +-------------------------------------------------+ |
-|  | ERP: 24981                    |  | Event Name     | Date     | Type | Status|Action| |
-|  | Dept: BS Computer Science     |  |----------------+----------+------+-------+------| |
-|  | Email: a.tariq@khi.iba.edu.pk |  | Coding Olympiad| Nov 12   | Team | Active|[Ticket]| |
-|  | Phone: [ +923001234567      ] |  | Music Fest '26 | Dec 02   | Solo | Active|[Ticket]| |
-|  |                               |  | Tech Talk      | Oct 10   | Solo | Done  |[Review]| |
-|  | [ Save Profile Details ]      |  +-------------------------------------------------+ |
-|  +-------------------------------+                                                      |
-+-----------------------------------------------------------------------------------------+
-```
-
-*Mobile: stack the profile card on top of the history table; turn table rows into cards.*
-
-## 2. Event Discovery & Browsing Screens
-
-### 2.1 Event Browse / Search Page (/events)
-
-**Desktop View**
-
-```text
-+-----------------------------------------------------------------------------------------+
-| RADES   [Explore Events] [My Tickets]                     [ Search...           ] [User]|
-+-----------------------------------------------------------------------------------------+
-|                                                                                         |
-|  FILTERS                      UPCOMING CAMPUS EVENTS                                    |
-|  +-------------------------+  +-------------------+ +-------------------+ +-----------+ |
-|  | Category                |  | [ Image ]         | | [ Image ]         | | [ Image ] | |
-|  | [x] Technology          |  | CS Society        | | Music Society     | | Sports  | |
-|  | [ ] Music & Arts        |  | Hackathon 2026    | | Battle of Bands   | | Futsal  | |
-|  | [ ] Sports              |  | Nov 15 | Auditorium | Nov 20 | Lawn     | | Dec 01  | |
-|  |                         |  | Seats: 45 left    | | PKR 500           | | FREE    | |
-|  | Society                 |  | [ View Details ]  | | [ View Details ]  | | [Details] | |
-|  | [ Select Society   v ]  |  +-------------------+ +-------------------+ +-----------+ |
-|  | Event date              |  |                   | |                   | |           | |
-|  | [ YYYY-MM-DD       ]    |  +-------------------+ +-------------------+ +-----------+ |
-|  |                         |  +-------------------+ +-------------------+ +-----------+ |
-|  | Registration Type       |  | [ Image ]         | | [ Image ]         | | [ Image ] | |
-|  | (o) All ( ) Free ( ) Paid|  | Debating Society  | | Entrepreneurship  | | Gaming  | |
-|  |                         |  | Annual MUN        | | Pitch Night       | | LAN Party | |
-|  | [ Clear All Filters ]   |  | Dec 05            | | Dec 12            | | Dec 18  | |
-|  +-------------------------+  +-------------------+ +-------------------+ +-----------+ |
-+-----------------------------------------------------------------------------------------+
-```
-
-*Mobile: collapse the filter sidebar into a drawer or 'Filters' button; show events in one column.*
-
-### 2.2 Event Detail Page (/events/[id])
-
-**Desktop View**
-
-```text
-+-----------------------------------------------------------------------------------------+
-| RADES   [ < Back to Events ]                              [ Share ] [ Bookmark ] [User] |
-+-----------------------------------------------------------------------------------------+
-|                                                                                         |
-|  +-----------------------------------------------+ +----------------------------------+ |
-|  |                                               | | IBA Hackathon 2026               | |
-|  |                                               | | Hosted by: CS Society            | |
-|  |           BANNER / EVENT ARTWORK              | | Faculty: Dr. Shakeel Khoja       | |
-|  |                                               | |                                  | |
-|  |                                               | | Date: Nov 15, 2026 | 09:00 AM   | |
-|  |                                               | | Venue: Main Campus Auditorium    | |
-|  |                                               | | Capacity: 155 / 200 Registered  | |
-|  |                                               | | Price: FREE                      | |
-|  |                                               | |                                  | |
-|  |                                               | | [ Register (Team) ]              | |
-|  |                                               | | [ + Google Calendar ]            | |
-|  +-----------------------------------------------+ +----------------------------------+ |
-|                                                                                         |
-|  About Event                                                                            |
-|  +------------------------------------------------------------------------------------+ |
-|  | Join us for a 12-hour coding marathon addressing real-world challenges facing IBA. | |
-|  | Cash prizes worth PKR 100,000 to be won. Teams of 3 to 4 members are required.     | |
-|  +------------------------------------------------------------------------------------+ |
-+-----------------------------------------------------------------------------------------+
-```
-
-## 3. Registration & Ticketing Screens
-
-### 3.1 Solo Registration Interface (/events/[id]/register-solo)
-
-**Desktop View**
-
-```text
-+-----------------------------------------------------------------------------------------+
-| RADES   [ < Back to Event Details ]                                                     |
-+-----------------------------------------------------------------------------------------+
-|                                                                                         |
-|                                Solo Event Registration                                  |
-|                                                                                         |
-|         +---------------------------------------------------------------------+         |
-|         | Event: Annual Tech Talk 2026 | Date: Nov 10, 2026 | Fee: Free           |         |
-|         |---------------------------------------------------------------------|         |
-|         | Student Name: Abdullah Tariq               ERP ID: 24981            |         |
-|         | Email: a.tariq@khi.iba.edu.pk                                       |         |
-|         |                                                                     |         |
-|         | Contact Number for Venue SMS Updates                                |         |
-|         | [ +923001234567                                                   ] |         |
-|         |                                                                     |         |
-|         | [x] I confirm I do not have schedule conflicts during this time.    |         |
-|         |                                                                     |         |
-|         | [ Confirm Solo Registration ]                                       |         |
-|         +---------------------------------------------------------------------+         |
-+-----------------------------------------------------------------------------------------+
-```
-
-### 3.2 Team Registration Interface (/events/[id]/register-team)
-
-**Desktop View**
-
-```text
-+-----------------------------------------------------------------------------------------+
-| RADES   [ < Back to Event Details ]                                                     |
-+-----------------------------------------------------------------------------------------+
-|                                                                                         |
-|                                Team Event Registration                                  |
-|                                                                                         |
-|         +---------------------------------------------------------------------+         |
-|         | Event: IBA Hackathon 2026 | Team Size: 3-4 Members                     |         |
-|         |---------------------------------------------------------------------|         |
-|         | Team Name                                                           |         |
-|         | [ Code Ninjas                                                     ] |         |
-|         |                                                                     |         |
-|         | Leader (You): Abdullah Tariq (a.tariq@khi.iba.edu.pk)               |         |
-|         |                                                                     |         |
-|         | Member 2 Institutional Email                                        |         |
-|         | [ duaa.naz@khi.iba.edu.pk                                         ] |         |
-|         |                                                                     |         |
-|         | Member 3 Institutional Email                                        |         |
-|         | [ emad.khan@khi.iba.edu.pk                                        ] |         |
-|         |                                                                     |         |
-|         | Member 4 Institutional Email (Optional)                             |         |
-|         | [ rayyan.hassan@khi.iba.edu.pk                                    ] |         |
-|         |                                                                     |         |
-|         | [ Submit Team Registration ]                                        |         |
-|         +---------------------------------------------------------------------+         |
-+-----------------------------------------------------------------------------------------+
-```
-
-### 3.3 Payment / Checkout Screen (/checkout)
-
-**Desktop View**
-
-```text
-+-----------------------------------------------------------------------------------------+
-| RADES Checkout                                                     [ Cancel & Exit ]    |
-+-----------------------------------------------------------------------------------------+
-|                                                                                         |
-|  +---------------------------------------+ +------------------------------------------+ |
-|  | Order Summary                         | | Payment Details (Stripe Test Mode)       | |
-|  |                                       | |                                          | |
-|  | Event: Battle of Bands 2026           | | Card Number                              | |
-|  | Quantity: 1 Ticket                    | | [ 4242  4242  4242  4242               ] | |
-|  | Ticket Holder: Abdullah Tariq         | |                                          | |
-|  |                                       | | Expiry               CVC                 | |
-|  | Ticket Price:         PKR 500.00      | | [ MM / YY ]          [ ___ ]             | |
-|  | Processing Fee:       PKR   0.00      | |                                          | |
-|  |---------------------------------------| | Name on Card                             | |
-|  | Total Due:            PKR 500.00      | | [ Abdullah Tariq                       ] | |
-|  |                                       | |                                          | |
-|  |                                       | | [ Pay PKR 500.00 ]                      | |
-|  +---------------------------------------+ +------------------------------------------+ |
-+-----------------------------------------------------------------------------------------+
-```
-
-### 3.4 Ticket & QR-Code Display Screen (/tickets/[id])
-
-**Desktop View**
-
-```text
-+-----------------------------------------------------------------------------------------+
-| RADES   [ < Back to My Profile ]                                      [ Download PDF ]  |
-+-----------------------------------------------------------------------------------------+
-|                                                                                         |
-|         +---------------------------------------------------------------------+         |
-|         | RADES OFFICIAL EVENT PASS                              TICKET #8941 |         |
-|         |---------------------------------------------------------------------|         |
-|         |                                                                     |         |
-|         |  IBA Hackathon 2026                         +-----------------+     |         |
-|         |  Date: Nov 15, 2026                         |  +-----------+  |     |         |
-|         |  Time: 09:00 AM - 06:00 PM                  |  | QR CODE   |  |     |         |
-|         |  Venue: Main Campus Auditorium              |  | SCAN TARGET| |     |         |
-|         |                                             |  +-----------+  |     |         |
-|         |  Holder: Abdullah Tariq                     +-----------------+     |         |
-|         |  ERP: 24981                                                         |         |
-|         |                                             Scan at gate entrance   |         |
-|         +---------------------------------------------------------------------+         |
-|                                                                                         |
-|                       [ Send Ticket Copy to Email ]                                     |
-+-----------------------------------------------------------------------------------------+
-```
-
-## 4. Society Administration & Management Screens
-
-### 4.1 Society Public Profile Page (/societies/[id])
-
-**Desktop View**
-
-```text
-+-----------------------------------------------------------------------------------------+
-| RADES   [Explore] [Societies]                                            [ Sign In ]    |
-+-----------------------------------------------------------------------------------------+
-|                                                                                         |
-|  +-----------------------------------------------------------------------------------+  |
-|  | [ LOGO ]  Computer Science Society (CSS)                                          |  |
-|  |           Empowering technical innovation at IBA Karachi.                         |  |
-|  |           Email: css@khi.iba.edu.pk | Office: Student Center 2nd Floor              |  |
-|  +-----------------------------------------------------------------------------------+  |
-|                                                                                         |
-|  Published Events by CSS                                                                |
-|  +-----------------------+ +-----------------------+ +-------------------------------+  |
-|  | IBA Hackathon 2026    | | AI Workshop 2026      | | Web Dev Bootcamp             |  |
-|  | Nov 15, 2026          | | Dec 10, 2026          | | Jan 05, 2027                 |  |
-|  | [ View Event ]        | | [ View Event ]        | | [ View Event ]                |  |
-|  +-----------------------+ +-----------------------+ +-------------------------------+  |
-+-----------------------------------------------------------------------------------------+
-```
-
-### 4.2 Society Administration Dashboard (/admin)
-
-**Desktop View**
-
-```text
-+-----------------------------------------------------------------------------------------+
-| RADES Admin | Computer Science Society                              [ Switch Portal v ] |
-+-----------------------------------------------------------------------------------------+
-|  NAVIGATION      | COMPUTER SCIENCE SOCIETY DASHBOARD                                |
-|  +-------------+ | [ All events: 12 ] [ Upcoming: 3 ] [ Awaiting review: 2 ]          |
-|  | [x] Dashboard | +------------------------------------------------------------------+ |
-|  | [ ] Events    | | Upcoming Events                         [ View all events ]   | |
-|  | [ ] Analytics | | Hackathon 2026       Nov 15     Published                     | |
-|  | [ ] Scanner   | | AI Seminar            Dec 10     Published                     | |
-|  | [ ] Panel     | | Tech Talk             Dec 18     Published                     | |
-|  |               | +------------------------------------------------------------------+ |
-|  | [ Settings ]  | [ + Create Event ]                                             |
-|  +-------------+                                                                        |
-+-----------------------------------------------------------------------------------------+
-```
-
-### 4.3 Event Creation & Editing Screen (/admin/events/new)
-
-**Desktop View**
-
-```text
-+-----------------------------------------------------------------------------------------+
-| RADES Admin | Create New Event                                      [ Cancel / Exit ]   |
-+-----------------------------------------------------------------------------------------+
-|                                                                                         |
-|  +---------------------------------------+ +------------------------------------------+ |
-|  | Basic Details                         | | Logistics & Configuration                | |
-|  |                                       | |                                          | |
-|  | Event Title                           | | Venue                                    | |
-|  | [___________________________________] | | [ Select Venue                      v ]  | |
-|  |                                       | |                                          | |
-|  | Category                              | | Start Date & Time        End Time        | |
-|  | [ Select Category                 v ] | | [ Date ] [ Time ]        [ Time ]        | |
-|  |                                       | |                                          | |
-|  | Event Description                     | | Capacity Limit           Ticket Price    | |
-|  | [___________________________________] | | [ 200 ]                  [ PKR 0        ] | |
-|  | [___________________________________] | |                                          | |
-|  |                                       | | Participation Mode                       | |
-|  | Event Banner Asset                    | | (o) Solo Registration  ( ) Team          | |
-|  | [ Upload Image File...              ] | |                                          | |
-|  +---------------------------------------+ +------------------------------------------+ |
-|                                                                                         |
-|  [ Save Draft ]                                                   [ Publish Event ]     |
-+-----------------------------------------------------------------------------------------+
-```
-
-### 4.4 Event Analytics Dashboard (/admin/events/[id]/analytics)
-
-**Desktop View**
-
-```text
-+-----------------------------------------------------------------------------------------+
-| RADES Admin | Analytics: IBA Hackathon 2026                         [ Export CSV ]      |
-+-----------------------------------------------------------------------------------------+
-|                                                                                         |
-|  +---------------------+ +---------------------+ +-----------------+ +------------------+ |
-|  | Total Registrations | | Total Check-Ins     | | Attendance %    | | Ticket Revenue   | |
-|  | 155 / 200           | | 132                 | | 85.1%           | | PKR 0.00 (Free) | |
-|  +---------------------+ +---------------------+ +-----------------+ +------------------+ |
-|                                                                                         |
-|  Attendance Rate Visual                                                                 |
-|  +------------------------------------------------------------------------------------+ |
-|  | Checked In: [====================================================.......] 85%       | |
-|  | No-Show:    [========...............................................] 15%       | |
-|  +------------------------------------------------------------------------------------+ |
-+-----------------------------------------------------------------------------------------+
-```
-
-### 4.5 Event Cancellation & Refund Status (/admin/events/[id]/cancel)
-
-**Desktop View**
-
-```text
-+-----------------------------------------------------------------------------------------+
-| RADES Admin | Cancel Event                                                              |
-+-----------------------------------------------------------------------------------------+
-|                                                                                         |
-|         +---------------------------------------------------------------------+         |
-|         | CONFIRM EVENT CANCELLATION                                          |         |
-|         | Event: Battle of Bands 2026                                         |         |
-|         | Affected Participants: 120 Registered Students                      |         |
-|         |---------------------------------------------------------------------|         |
-|         | Reason for Cancellation                                             |         |
-|         | [_________________________________________________________________] |         |
-|         |                                                                     |         |
-|         | Financial Refund Summary                                            |         |
-|         | Total Ticket Revenue to Refund: PKR 60,000                            |         |
-|         |                                                                     |         |
-|         | [x] Automatically issue refunds to original payment methods (Stripe)|         |
-|         | [x] Send cancellation email alerts via Resend to all participants.  |         |
-|         |                                                                     |         |
-|         | [ Abort / Keep Event ]            [ Confirm & Cancel Event ]        |         |
-|         +---------------------------------------------------------------------+         |
-+-----------------------------------------------------------------------------------------+
-```
-
-### 4.6 Society Member / Panel Management (/admin/members)
-
-**Desktop View**
-
-```text
-+-----------------------------------------------------------------------------------------+
-| RADES Admin | Society Panel Management                                                  |
-+-----------------------------------------------------------------------------------------+
-|                                                                                         |
-|  Society Admins                              Faculty Patron                            |
-|  +-----------------------------------------+  +---------------------------------------+ |
-|  | [icon] First Last                       |  | [icon] First Last                     | |
-|  |        admin@khi.iba.edu.pk              |  |        patron@iba.edu.pk              | |
-|  |        Student society admin             |  |        Assigned faculty reviewer      | |
-|  |-----------------------------------------|  |                                       | |
-|  | [icon] First Last                       |  | Assignments are managed by OSSIE.    | |
-|  |        admin2@khi.iba.edu.pk             |  |                                       | |
-|  +-----------------------------------------+  +---------------------------------------+ |
-+-----------------------------------------------------------------------------------------+
-```
-
-### 4.7 Society Events (/admin/events)
-
-The Events sidebar destination owns the society event list and status filter. The Dashboard shows a summary and upcoming schedule instead of repeating this list.
-
-```text
-+-----------------------------------------------------------------------------------------+
-| RADES Society Workspace | Computer Science Society             [Switch Society v]      |
-+-----------------------------------------------------------------------------------------+
-| NAVIGATION       | EVENTS                              [Status: All v] [+ Create Event]  |
-| +-------------+  | +------------------------------------------------------------------+ |
-| | [ ] Dashboard| | | Event             | Date       | Type / Capacity | Status |Actions| |
-| | [x] Events   | | | Hackathon 2026    | Nov 15     | Team · 200      | Upcoming|Stats | |
-| | [ ] Analytics| | | AI Seminar        | Dec 10     | Solo · 80       | Draft   |Edit  | |
-| | [ ] Panel    | | +------------------------------------------------------------------+ |
-| +-------------+  |                                                                  |
-+-----------------------------------------------------------------------------------------+
-```
-
-## 5. On-Site Operations & Post-Event Screens
-
-### 5.1 QR Scanner / Check-In Screen (/admin/checkin)
-
-**Mobile View (primary device for scanners)**
-
-```text
-+-------------------------------------------------+
-| RADES Check-In       [ Event: Hackathon 2026 v ]|
-+-------------------------------------------------+
-|                                                 |
-|          +---------------------------+          |
-|          |                           |          |
-|          |     [ CAMERA VIEWFINDER ] |          |
-|          |                           |          |
-|          |         +-------+         |          |
-|          |         | Scan  |         |          |
-|          |         +-------+         |          |
-|          |                           |          |
-|          +---------------------------+          |
-|                                                 |
-|  LAST SCAN STATUS                               |
-|  +-------------------------------------------+  |
-|  | [ STATUS: VALID TICKET ]                  |  |
-|  | Name: Abdullah Tariq                      |  |
-|  | ERP: 24981                                |  |
-|  | Check-in Time: 09:02 AM                   |  |
-|  +-------------------------------------------+  |
-|                                                 |
-|  [ Scan Next ]         [ Manual ID Entry ]      |
-+-------------------------------------------------+
-```
-
-*Desktop: camera stream in a central module with an attendee log feed on the right.*
-
-### 5.2 Feedback Form Screen (/events/[id]/feedback)
-
-**Desktop View**
-
-```text
-+-----------------------------------------------------------------------------------------+
-| RADES | Post-Event Feedback Submission                                                  |
-+-----------------------------------------------------------------------------------------+
-|                                                                                         |
-|         +---------------------------------------------------------------------+         |
-|         | Event: Guest Tech Talk 2026 | Host: CS Society                      |         |
-|         |---------------------------------------------------------------------|         |
-|         | Overall Rating                                                      |         |
-|         | [ * ]  [ * ]  [ * ]  [ * ]  [   ]   (4 / 5 Stars)                   |         |
-|         |                                                                     |         |
-|         | Detailed Written Feedback                                           |         |
-|         | [ Great presentation and Q&A session.                             ] |         |
-|         | [_________________________________________________________________] |         |
-|         |                                                                     |         |
-|         | [ Submit Feedback ]                                                 |         |
-|         +---------------------------------------------------------------------+         |
-+-----------------------------------------------------------------------------------------+
-```
-
-## 6. Institutional Oversight Screen
-
-### 6.1 Student Societies Office Oversight Dashboard (/sso/dashboard)
-
-**Desktop View**
-
-```text
-+-----------------------------------------------------------------------------------------+
-| RADES | Office of Student Societies Oversight                                  [User v] |
-+-----------------------------------------------------------------------------------------+
-|                                                                                         |
-|  CAMPUS-WIDE METRICS                                                                    |
-|  +-------------------+ +-------------------+ +-------------------+ +------------------+ |
-|  | Active Societies  | | Published Events  | | Total Check-Ins   | | Capacity Usage % | |
-|  | 18                | | 42                | | 3,450             | | 78.4%            | |
-|  +-------------------+ +-------------------+ +-------------------+ +------------------+ |
-|                                                                                         |
-|  ALL SOCIETIES EVENT DIRECTORY                                                          |
-|  Society: [ All v ] Status: [ All v ] Category: [ All v ] Date: [ All / Upcoming / Past ]|
-|  +------------------------------------------------------------------------------------+ |
-|  | Event Name        | Society      | Date     | Category       | Status                | |
-|  |-------------------+--------------+----------+----------------+-----------------------| |
-|  | Hackathon 2026    | CS Society   | Nov 15   | Technology     | Published / Upcoming  | |
-|  | Battle of Bands   | Music Soc    | Dec 02   | Music & Arts   | Published / Upcoming  | |
-|  | Annual MUN        | Debating Soc | Oct 15   | Culture        | Published / Finished  | |
-|  +------------------------------------------------------------------------------------+ |
-+-----------------------------------------------------------------------------------------+
-```
-
-## Implemented Screens Without a Dedicated Wireframe
-
-This list includes screens that currently exist in the application and have no direct screen layout in this guide. Screens described above but not implemented are intentionally excluded.
-
-- Public landing page (`/`): the public home page and its featured event content.
-- Explore Societies directory (`/societies`): the society listing screen. Section 4.1 covers an individual society profile, not the directory.
-- Student dashboard (`/dashboard` for regular students): the signed-in student overview and event feed.
-- Faculty patron dashboard (`/dashboard` for patrons): assigned societies and the event review queue.
-- Society-wide analytics (`/admin/analytics`): aggregate event counts for one society. Section 4.4 covers analytics for one event.
-- Email verification confirmation (`/verify-email`): the post-registration confirmation and resend screen.
+# RADES visual wireframes
+
+This index links to full-page desktop captures of the deployed RADES site. They are direct screenshots of the current UI, not reconstructed mockups. All refreshed captures use the same dark theme; the header’s **Light mode** control confirms that dark mode is active. The browser viewport was 1425 px wide. Mobile layouts are out of scope for this pass.
+
+Event-specific captures use two events created during this review and then approved by the patron and OSSIE. Screens showing the approval queue were captured while those events were awaiting the relevant review; the public listings, details, registrations, tickets, and dashboards were captured after publication. No registration changes were made beyond the authorized solo registration, and no teammate was invited.
+
+## Public pages
+
+| Page | Route | Visual capture |
+| --- | --- | --- |
+| Landing, signed out | `/` | [Open capture](wireframes/live/landing-anonymous.png) |
+| Landing, signed in | `/` | [Open capture](wireframes/live/landing.png) |
+| Event discovery and filters | `/events` | [Open capture](wireframes/live/events.png) |
+| Event details | `/events/[id]` | [Open capture](wireframes/live/event-detail.png) |
+| Solo registration form and registered state | `/events/[id]/register-solo` | [Open form](wireframes/live/register-solo.png) · [Open completed registration in profile](wireframes/live/profile-student.png) |
+| Team registration form | `/events/[id]/register-team` | [Open capture](wireframes/live/register-team.png) |
+| Post-event feedback | `/events/[id]/feedback` | [Open capture](wireframes/live/feedback.png) |
+| Society directory | `/societies` | [Open capture](wireframes/live/societies.png) |
+| Society profile | `/societies/[slug]` | [Open capture](wireframes/live/society-profile.png) |
+| Privacy policy | `/privacy` | [Open capture](wireframes/live/privacy.png) |
+| Terms of service | `/terms` | [Open capture](wireframes/live/terms.png) |
+
+## Authentication and account
+
+| Page | Route | Visual capture |
+| --- | --- | --- |
+| Sign in | `/sign-in` | [Open capture](wireframes/live/sign-in.png) |
+| Create account | `/sign-up` | [Open capture](wireframes/live/sign-up.png) |
+| Request password reset | `/forgot-password` | [Open capture](wireframes/live/forgot-password.png) |
+| Choose a new password | `/reset-password` | [Open capture](wireframes/live/reset-password.png) |
+| Email verification notice | `/verify-email` | [Open capture](wireframes/live/verify-email.png) |
+| Change password | `/change-password` | [Open capture](wireframes/live/change-password.png) |
+
+## Student pages
+
+| Page | Route | Visual capture |
+| --- | --- | --- |
+| Regular student dashboard | `/dashboard` | [Open capture](wireframes/live/student-dashboard.png) |
+| Student profile and registration history | `/profile` | [Open capture](wireframes/live/profile-student.png) |
+| Digital event ticket and QR pass | `/tickets/[id]` | [Open capture](wireframes/live/ticket-detail.png) |
+| Checkout success return | `/checkout/success` | [Open capture](wireframes/live/checkout-success.png) |
+| Checkout cancellation return | `/checkout/cancel` | [Open capture](wireframes/live/checkout-cancel.png) |
+
+The checkout return routes were captured without a live payment session, so they show the route’s current response rather than a completed paid registration.
+
+## Society workspace
+
+| Page | Route | Visual capture |
+| --- | --- | --- |
+| Society dashboard | `/admin` | [Open capture](wireframes/live/society-dashboard.png) |
+| Event list and workflow statuses | `/admin/events` | [Open capture](wireframes/live/society-events.png) |
+| Create event form | `/admin/events/new` | [Open capture](wireframes/live/event-editor.png) |
+| Society analytics | `/admin/analytics` | [Open capture](wireframes/live/society-analytics.png) |
+| Society panel and admins | `/admin/members` | [Open capture](wireframes/live/society-panel.png) |
+| Event analytics | `/admin/events/[id]/analytics` | [Open capture](wireframes/live/event-analytics.png) |
+| Event cancellation form | `/admin/events/[id]/cancel` | [Open capture](wireframes/live/event-cancel.png) |
+| Ticket check-in | `/admin/events/[id]/check-in` | [Open capture](wireframes/live/check-in.png) |
+
+## Faculty patron workspace
+
+| Page or view | Route | Visual capture |
+| --- | --- | --- |
+| Patron dashboard | `/dashboard` | [Open capture](wireframes/live/faculty-dashboard.png) |
+| Event reviews tab after approval | `/dashboard` | [Open current empty queue](wireframes/live/faculty-event-reviews.png) |
+
+## OSSIE workspace
+
+| Page or view | Route | Visual capture |
+| --- | --- | --- |
+| Institutional overview and published event directory | `/office` (workspace route resolves to `/dashboard`) | [Open capture](wireframes/live/office-dashboard.png) |
+| Society directory and assignment controls | `/office` — Societies tab | [Open capture](wireframes/live/office-societies.png) |
+| Final approval queue with the two review events pending | `/office` — Approval queue tab | [Open approval snapshot](wireframes/live/office-approvals.png) |
+
+## Route notes
+
+`/admin/panel`, `/office/analytics`, and `/home` route into their parent workspace/dashboard views and do not have separate page layouts. The student-dashboard capture uses a regular student account, while the society and institutional workspaces use their corresponding accounts. The ticket capture is for the successful solo registration. The team form is shown without submitting or sending an invitation.

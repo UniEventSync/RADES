@@ -27,13 +27,38 @@ Registration, ticket, invitation, and event-update emails use the configured ema
 
 ### Stripe test payments
 
-RADES accepts Stripe test credentials only. In the Stripe Dashboard, switch to **Test mode**, then copy the test secret key (`sk_test_…`) and publishable key (`pk_test_…`) into `.env.local`. For local webhooks, install the Stripe CLI and run:
+RADES accepts **Stripe test-mode payments only**. Live or production Stripe keys are not supported.
+
+1. Open the [Stripe Dashboard](https://dashboard.stripe.com/) and switch the dashboard to **Test mode**.
+2. Copy the test publishable key (`pk_test_…`) into `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`.
+3. Copy the test secret key (`sk_test_…`) into `STRIPE_SECRET_KEY`.
+4. Add `STRIPE_WEBHOOK_SECRET` for the test webhook endpoint or local Stripe CLI listener.
+
+Do not add `rk_live_`, `sk_live_`, or `pk_live_` keys to RADES. The application validates that the secret and publishable keys use the test prefixes.
+
+#### Test card details
+
+Use these details only in Stripe Checkout:
+
+| Purpose | Card number | Expiry | CVC | ZIP/postal code |
+| --- | --- | --- | --- | --- |
+| Successful payment | `4242 4242 4242 4242` | Any future date | Any 3 digits | Any 5 digits |
+| Declined payment | `4000 0000 0000 0002` | Any future date | Any 3 digits | Any 5 digits |
+| Insufficient funds | `4000 0000 0000 9995` | Any future date | Any 3 digits | Any 5 digits |
+
+RADES creates Checkout Sessions in PKR and allows card payments only. The event registration price is a fixed total for the registration, whether solo or team; paid registrations must be at least PKR 50 and no more than PKR 999,999.99.
+
+#### Local webhook testing
+
+Install the [Stripe CLI](https://docs.stripe.com/stripe-cli), authenticate it with test-mode access, and run:
 
 ```powershell
-stripe listen --forward-to localhost:3000/api/stripe/webhook
+stripe listen --forward-to localhost:3000/api/stripe/webhook --events checkout.session.completed,checkout.session.expired,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed
 ```
 
-Copy the CLI’s `whsec_…` signing secret to `STRIPE_WEBHOOK_SECRET`. Never use live keys for this project. A standard successful test card is `4242 4242 4242 4242` with a future expiry and any CVC.
+Copy the CLI listener’s `whsec_…` signing secret into `STRIPE_WEBHOOK_SECRET`, then run the app and complete a test payment. Never use live keys for this project.
+
+For the deployed website, keep Stripe in **Test mode** and create a test webhook endpoint in Stripe Dashboard: Developers > Webhooks > Add endpoint. Use `https://<your-domain>/api/stripe/webhook` as the endpoint URL, subscribe to `checkout.session.completed`, `checkout.session.expired`, `checkout.session.async_payment_succeeded`, and `checkout.session.async_payment_failed`, then reveal and copy the endpoint’s `whsec_…` signing secret. Set that test endpoint secret as `STRIPE_WEBHOOK_SECRET` in the deployment environment and redeploy. A test endpoint created in Test mode remains usable on the live deployed URL; do not use a live-mode endpoint or live keys.
 
 ### Google Calendar
 
@@ -42,3 +67,5 @@ In Google Cloud Console, create an OAuth 2.0 **Web application** client, enable 
 ## Environment variables
 
 Start from `.env.example`. It lists the required application URL and backend keys, optional email sender settings, Stripe test keys, Google OAuth client ID, and seeded development account settings. Keep `.env.local` private and never commit secrets. The backend secret key must remain server-side.
+
+Set `APP_URL` to the deployed site URL for production, such as `https://rades-beryl.vercel.app`. It is a server-side application setting, not a `NEXT_PUBLIC_*` browser variable.

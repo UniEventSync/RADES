@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
   if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
     try {
-      const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;
+      const siteUrl = process.env.APP_URL ?? new URL(request.url).origin;
       await Promise.all([sendRegistrationConfirmationEmails(admin, registrationId.data, siteUrl), sendTicketInformationEmails(admin, registrationId.data, siteUrl)]);
     } catch (sendError) { console.error("RADES paid registration confirmation email could not be attempted", sendError); }
   }

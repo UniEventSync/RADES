@@ -7,6 +7,7 @@ import { emailTemplates } from "@/lib/email/templates";
 import { sendEventParticipantNotices } from "@/lib/email/event-participant-notifications";
 import { isUploadedMediaUrl } from "@/lib/storage/media";
 import { eventCategories, eventSubcategories, eventVenues, isEventSubcategory } from "@/lib/events/taxonomy";
+import { STRIPE_MIN_REGISTRATION_PKR } from "@/lib/payments/constants";
 
 const plainText = (min: number, max: number) => z.string().trim().min(min).max(max).refine(value => !/[<>]/.test(value), "HTML markup is not allowed.");
 const inputSchema = z.object({ title: plainText(3,150), description: plainText(10,8000), category: z.enum(eventCategories), subcategory: z.enum(eventSubcategories), venue: plainText(2,200), venues: z.array(z.enum(eventVenues)).min(1).max(9), startsAt: z.string().datetime({ offset: true }), endsAt: z.string().datetime({ offset: true }), capacity: z.number().int().positive().nullable(), pricePkr: z.number().int().min(0), registrationType: z.enum(["solo", "team"]), teamMin: z.number().int().min(2).max(50).default(2), teamMax: z.number().int().min(2).max(50).default(5), image_url: z.string().trim().url().refine(isUploadedMediaUrl).or(z.literal("")).optional(), status: z.enum(["draft", "pending_patron"]) }).refine(value => value.teamMin <= value.teamMax, { message: "Maximum team size must be at least the minimum team size.", path: ["teamMax"] }).refine(value => isEventSubcategory(value.category, value.subcategory), { message: "Choose a subcategory for the selected event category.", path: ["subcategory"] });
@@ -15,6 +16,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (!user) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   const input = inputSchema.safeParse(await request.json()); if (!input.success) return NextResponse.json({ error: input.error.issues[0]?.message }, { status: 400 });
   if (new Date(input.data.startsAt) <= new Date()) return NextResponse.json({ error: "An event must start in the future." }, { status: 400 });
+  if (input.data.pricePkr > 0 && input.data.pricePkr < STRIPE_MIN_REGISTRATION_PKR) return NextResponse.json({ error: `Paid event registration must be at least PKR ${STRIPE_MIN_REGISTRATION_PKR} total. Use 0 for a free event.` }, { status: 400 });
   if (new Date(input.data.endsAt) <= new Date(input.data.startsAt)) return NextResponse.json({ error: "Choose an end date and time later than the event start." }, { status: 400 });
   const { data: event } = await supabase.from("events").select("id,society_id,status,image_url,is_public,title,description,category,subcategory,venue,venues,starts_at,ends_at,capacity,price_pkr,registration_type,team_min,team_max").eq("id", id).maybeSingle();
   if (!event) return NextResponse.json({ error: "Event not found." }, { status: 404 });
@@ -28,9 +30,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   let patrons: Array<{user_id:string;profiles:{email?:string}|null}> = [];
   const resubmitting = input.data.status === "pending_patron" && (event.status === "draft" || event.status === "pending_ossie" || event.status === "rejected" || event.status === "published");
   if (input.data.status === "pending_patron") {
-    const { data, error } = await createAdminClient().from("society_patrons").select("user_id,profiles!society_patrons_user_id_fkey(email)").eq("society_id", event.society_id);
+    const admin = createAdminClient();
+    const { data: assignments, error } = await admin.from("society_patrons").select("user_id").eq("society_id", event.society_id);
     if (error) return NextResponse.json({ error: "Could not check this society’s patron assignment." }, { status: 500 });
-    patrons=(data??[]) as unknown as typeof patrons;
+    const userIds = (assignments ?? []).map(row => row.user_id);
+    const { data: patronProfiles, error: profilesError } = userIds.length
+      ? await admin.from("profiles").select("id,email").in("id", userIds)
+      : { data: [] as { id: string; email: string }[], error: null };
+    if (profilesError) return NextResponse.json({ error: "Could not load this society’s patron account." }, { status: 500 });
+    patrons = (patronProfiles ?? []).map(profile => ({ user_id: profile.id, profiles: { email: profile.email } }));
     if (!patrons.length) return NextResponse.json({ error: "This society needs an assigned faculty patron before an event can be submitted." }, { status: 400 });
   }
   const nextStatus = ["pending_ossie", "published", "rejected"].includes(event.status) ? "pending_patron" : input.data.status;
@@ -39,7 +47,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (error) return NextResponse.json({ error: error.message }, { status: 403 });
   if (!updatedEvent) return NextResponse.json({ error: "The event changed while you were editing. Refresh it before saving again." }, { status: 409 });
   if (resubmitting) {
-    const url=`${process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin}/dashboard`;
+    const url=`${process.env.APP_URL??new URL(request.url).origin}/dashboard`;
     for(const patron of patrons){const email=patron.profiles?.email;if(email)await sendTrackedEmail({to:email,...emailTemplates.eventSubmitted(input.data.title,url)},{userId:patron.user_id,eventId:id,type:"event_resubmitted_for_patron_review"});}
   }
   const participantDetailsChanged = event.status === "published" && (
@@ -51,7 +59,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (participantDetailsChanged) {
     try {
       const notificationKey = updatedEvent.updated_at;
-      participantNotifications = await sendEventParticipantNotices(createAdminClient(), id, process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin, "event_update", undefined, notificationKey);
+      participantNotifications = await sendEventParticipantNotices(createAdminClient(), id, process.env.APP_URL ?? new URL(request.url).origin, "event_update", undefined, notificationKey);
     }
     catch (noticeError) { console.error("RADES event update notifications could not be sent", noticeError); participantNotifications = { sent: 0, failed: 1, skipped: 0 }; }
   }

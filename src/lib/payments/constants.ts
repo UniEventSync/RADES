@@ -1,0 +1,1 @@
+export const STRIPE_MIN_REGISTRATION_PKR = 50;

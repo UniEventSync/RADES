@@ -51,7 +51,7 @@ export async function POST(request: Request, { params }: RouteContext) {
   if (result.status === "confirmed") {
     try {
       const admin = createAdminClient();
-      const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;
+      const siteUrl = process.env.APP_URL ?? new URL(request.url).origin;
       [confirmationEmail, ticketEmail] = await Promise.all([sendRegistrationConfirmationEmails(admin, result.registrationId, siteUrl), sendTicketInformationEmails(admin, result.registrationId, siteUrl)]);
     } catch (sendError) { console.error("RADES registration emails could not be attempted", sendError); confirmationEmail = { sent: 0, failed: 1, skipped: 0 }; ticketEmail = { sent: 0, failed: 1, skipped: 0 }; }
   }

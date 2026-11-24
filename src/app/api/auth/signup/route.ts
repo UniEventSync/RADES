@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.signUp({
       email, password: parsed.data.password,
-      options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin}/auth/callback`, data: { first_name: parsed.data.firstName || derived?.firstName, last_name: parsed.data.lastName || derived?.lastName, phone: parsed.data.phone || null, account_type: accountType, erp_number: derived?.erpNumber ?? null } },
+      options: { emailRedirectTo: `${process.env.APP_URL ?? new URL(request.url).origin}/auth/callback`, data: { first_name: parsed.data.firstName || derived?.firstName, last_name: parsed.data.lastName || derived?.lastName, phone: parsed.data.phone || null, account_type: accountType, erp_number: derived?.erpNumber ?? null } },
     });
     if (error) {
       const errorMessage = error.message.toLowerCase();

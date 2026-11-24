@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { getStripe } from "@/lib/stripe/server";
+import { STRIPE_MIN_REGISTRATION_PKR } from "@/lib/payments/constants";
 
 type Registration = { id: string; event_id: string; leader_id: string; status: string; amount_pkr: number; payment_expires_at: string | null };
 type CheckoutResult = { checkoutUrl: string } | { error: string; status: number };
@@ -33,7 +34,7 @@ export async function createOrReuseCheckout(supabase: SupabaseClient, user: User
       const session = await stripe.checkout.sessions.retrieve(existingPayment.checkout_session_id);
       if (session.status === "open" && session.url) return { checkoutUrl: session.url };
       if (session.status === "complete") {
-        const site = (process.env.NEXT_PUBLIC_APP_URL ?? new URL(requestUrl).origin).replace(/\/$/, "");
+        const site = (process.env.APP_URL ?? new URL(requestUrl).origin).replace(/\/$/, "");
         return { checkoutUrl: `${site}/checkout/success?session_id=${encodeURIComponent(session.id)}` };
       }
       if (session.status === "open") await stripe.checkout.sessions.expire(session.id);
@@ -51,11 +52,11 @@ export async function createOrReuseCheckout(supabase: SupabaseClient, user: User
     return { error: "The payment hold expired. Register again to reserve a new place.", status: 409 };
   }
   const amountMinor = row.amount_pkr * 100;
-  if (!Number.isSafeInteger(amountMinor) || amountMinor < 50 || amountMinor > 99_999_999) {
+  if (!Number.isSafeInteger(amountMinor) || amountMinor < STRIPE_MIN_REGISTRATION_PKR * 100 || amountMinor > 99_999_999) {
     await releaseHold(supabase, row.id);
-    return { error: "The event total is outside Stripe’s supported PKR card-payment range.", status: 400 };
+    return { error: `The registration total must be at least PKR ${STRIPE_MIN_REGISTRATION_PKR} for Stripe card payment.`, status: 400 };
   }
-  const site = (process.env.NEXT_PUBLIC_APP_URL ?? new URL(requestUrl).origin).replace(/\/$/, "");
+  const site = (process.env.APP_URL ?? new URL(requestUrl).origin).replace(/\/$/, "");
   const { data: prepared, error: prepareError } = await supabase.rpc("prepare_event_checkout", { p_registration_id: row.id });
   if (prepareError || !prepared?.expiresAt || !prepared?.idempotencyKey) {
     await releaseHold(supabase, row.id);
@@ -76,9 +77,18 @@ export async function createOrReuseCheckout(supabase: SupabaseClient, user: User
       cancel_url: `${site}/checkout/cancel?registration_id=${encodeURIComponent(row.id)}`,
       expires_at: Number(prepared.expiresAt),
     }, { idempotencyKey: String(prepared.idempotencyKey) });
-  } catch {
+  } catch (error) {
+    console.error("RADES Stripe Checkout session could not be created", {
+      registrationId: row.id,
+      amountPkr: row.amount_pkr,
+      error: error instanceof Error ? error.message : String(error),
+    });
     await releaseHold(supabase, row.id);
-    return { error: "Stripe could not start test checkout. The reserved seats have been released; try registering again.", status: 502 };
+    const stripeMessage = error instanceof Error ? error.message : "";
+    const detail = stripeMessage.includes("at least 50 cents")
+      ? "The registration total is below Stripe’s minimum PKR card-payment amount."
+      : "Stripe rejected the test checkout configuration or account payment settings.";
+    return { error: `${detail} The reserved seats have been released; try again or use a higher event registration total.`, status: 502 };
   }
   if (!session.url) {
     await releaseHold(supabase, row.id);

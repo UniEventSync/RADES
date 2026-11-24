@@ -15,6 +15,7 @@ declare global {
 export function GoogleCalendarButton({ event }: { event: { id: string; title: string; description?: string; startsAt: string; endsAt: string; venue: string; url: string } }) {
   const [scriptReady, setScriptReady] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [added, setAdded] = useState(() => typeof window !== "undefined" && window.localStorage.getItem(`rades-calendar:${event.id}`) === "1");
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
   const [calendarLink, setCalendarLink] = useState("");
@@ -36,12 +37,15 @@ export function GoogleCalendarButton({ event }: { event: { id: string; title: st
       headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
       body: JSON.stringify(googleEvent),
     }).then(async response => {
-      if (response.status === 409) { setError(false); setMessage("This event is already in your Google Calendar."); return; }
+      if (response.status === 409) { setError(false); setMessage("This event is already in your Google Calendar."); setAdded(true); setBusy(false); window.localStorage.setItem(`rades-calendar:${event.id}`, "1"); return; }
       const body = await response.json().catch(() => null) as { htmlLink?: string; error?: { message?: string } } | null;
       if (!response.ok) { showError(body?.error?.message ?? "Google Calendar could not add this event. Check your Google account permissions and try again."); return; }
       setError(false);
       setMessage(body?.htmlLink ? "Added to Google Calendar." : "Added to Google Calendar successfully.");
       setCalendarLink(body?.htmlLink ?? "");
+      setAdded(true);
+      setBusy(false);
+      window.localStorage.setItem(`rades-calendar:${event.id}`, "1");
     }).catch(() => showError("Could not connect to Google Calendar. Check your connection and try again."));
   }
 
@@ -66,7 +70,7 @@ export function GoogleCalendarButton({ event }: { event: { id: string; title: st
 
   return <div className="w-full">
     <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" onReady={() => setScriptReady(true)} onError={() => { setScriptReady(false); showError("Google Calendar authorization did not load. Refresh and try again."); }}/>
-    <button type="button" onClick={requestCalendarAccess} disabled={busy} aria-describedby={`calendar-message-${event.id}`} className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-800 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700 disabled:cursor-wait disabled:opacity-60"><span aria-hidden="true">{busy ? <LoaderCircle size={17} className="animate-spin"/> : <CalendarPlus size={17}/>}</span>{busy ? "Adding to calendar…" : "+ Google Calendar"}</button>
+    <button type="button" onClick={requestCalendarAccess} disabled={busy || added} aria-describedby={`calendar-message-${event.id}`} className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-800 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-600"><span aria-hidden="true">{busy ? <LoaderCircle size={17} className="animate-spin"/> : <CalendarPlus size={17}/>}</span>{busy ? "Adding to calendar…" : added ? "Already in Google Calendar" : "+ Google Calendar"}</button>
     {!scriptReady && !message && <p className="sr-only">Google Calendar authorization is loading.</p>}
     <p id={`calendar-message-${event.id}`} role={message ? (error ? "alert" : "status") : undefined} aria-live="polite" className={`mt-2 text-xs ${error ? "text-red-800" : "text-slate-600"}`}>{message}{calendarLink && <> <a href={calendarLink} target="_blank" rel="noopener noreferrer" className="font-semibold underline">Open calendar entry</a></>}</p>
   </div>;

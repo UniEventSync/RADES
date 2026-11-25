@@ -1,6 +1,21 @@
 # RADES visual wireframes
 
-This index links to full-page desktop captures of the deployed RADES site. They are direct screenshots of the current UI, not reconstructed mockups. All refreshed captures use the same dark theme; the header’s **Light mode** control confirms that dark mode is active. The browser viewport was 1425 px wide. Mobile layouts are out of scope for this pass.
+This index links to full-page desktop captures of the deployed RADES site. They are direct screenshots, not reconstructed mockups. The images were captured before the current theme refresh and are retained as layout references; their colors, typography, and corner treatments no longer represent the app. The original captures used a 1425 px browser viewport. Mobile layouts are out of scope for this capture set.
+
+## Current visual theme
+
+The app uses the **Ink & Parchment** palette in both light and dark modes. The theme toggle switches the same semantic colors without changing page layout or content placement. Surfaces are solid, corners are square, hover effects are limited to color changes, and scrollbars use the active theme colors. The footer uses a neutral theme-aware surface with high-contrast text and a light logo tile. Transactional emails use a consistent light palette and the RADES brand logo.
+
+| Token | Light | Dark |
+| --- | --- | --- |
+| Page background | `#F5F0E4` | `#10191E` |
+| Surface | `#FFFDF6` | `#18252B` |
+| Primary action | `#274B5C` | `#315A67` |
+| Accent | `#946F2F` | `#D6B674` |
+| Main text | `#222A2E` | `#EFE8D8` |
+| Border | `#D7CDB9` | `#3A494B` |
+
+The interface uses Georgia with a Times New Roman serif fallback. Transactional emails use the light palette because email clients do not share the app’s theme preference. Success, warning, error, and informational states retain distinct accessible colors within the palette.
 
 Event-specific captures use two events created during this review and then approved by the patron and OSSIE. Screens showing the approval queue were captured while those events were awaiting the relevant review; the public listings, details, registrations, tickets, and dashboards were captured after publication. No registration changes were made beyond the authorized solo registration, and no teammate was invited.
 

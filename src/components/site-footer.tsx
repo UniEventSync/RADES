@@ -3,11 +3,11 @@ import Image from "next/image";
 import { ArrowUpRight, Mail } from "lucide-react";
 
 export function SiteFooter() {
-  return <footer className="border-t border-slate-800 bg-slate-950 px-5 py-10 text-slate-300 sm:px-8">
+  return <footer className="site-footer border-t border-slate-800 bg-slate-950 px-5 py-10 text-slate-300 sm:px-8">
     <div className="mx-auto grid max-w-7xl gap-9 sm:grid-cols-[1.4fr_.8fr_.8fr]">
       <div>
         <Link href="/" className="inline-flex items-center gap-3" aria-label="RADES home">
-          <Image src="/Icon.png" alt="" width={44} height={44} className="h-11 w-11 object-contain" />
+          <Image src="/Icon.png" alt="" width={44} height={44} className="site-footer-logo h-11 w-11 object-contain" />
           <span><strong className="block text-base text-white">RADES</strong><span className="text-[10px] font-semibold uppercase tracking-[.16em] text-slate-400">IBA Karachi</span></span>
         </Link>
         <p className="mt-4 max-w-sm text-sm leading-6 text-slate-400">Discover what is happening across campus and keep society events in one place.</p>

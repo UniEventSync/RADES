@@ -31,6 +31,13 @@ PROJECT RULES
   expose them accessibly (status/alert semantics, keyboard operation, contrast).
 - Match new or changed screens to `docs/RADES_wireframes.md` where a wireframe
   exists. Preserve the current responsive visual system where none exists.
+- Use the **Ink & Parchment** palette, Georgia font stack, square corners, and
+  theme-aware colors documented in `docs/RADES_wireframes.md` and implemented
+  in `src/app/globals.css`. Keep light and dark modes legible; do not introduce
+  unrelated colors or alter existing page layout for visual-only changes.
+- Keep transactional email branding aligned with the light palette. Email logo
+  URLs must be absolute and use the public RADES logo asset; escape dynamic
+  content and retain email-client-compatible markup.
 - Do not expose secrets from `.env.local`; update `.env.example` with blank
   placeholders when configuration changes.
 - Keep `docs/WORK_LOG.md` accurate about implementation, verification, and

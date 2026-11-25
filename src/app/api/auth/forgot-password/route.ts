@@ -26,7 +26,8 @@ export async function POST(request: Request) {
   }
   if (!data?.properties.email_otp) return NextResponse.json({ error: "The authentication service returned no recovery code." }, { status: 503 });
 
-  const delivery = await sendEmail({ to: email, ...emailTemplates.passwordRecovery(data.properties.email_otp) });
+  const siteUrl = process.env.APP_URL ?? new URL(request.url).origin;
+  const delivery = await sendEmail({ to: email, ...emailTemplates.passwordRecovery(data.properties.email_otp, siteUrl) });
   if (!delivery.sent) {
     console.error("RADES recovery code delivery failed", delivery.reason);
     return NextResponse.json({ error: "Recovery email could not be sent. Check the configured email provider and try again." }, { status: 503 });

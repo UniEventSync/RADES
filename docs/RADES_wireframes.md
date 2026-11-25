@@ -4,7 +4,7 @@ This index links to full-page desktop captures of the deployed RADES site. They 
 
 ## Current visual theme
 
-The app uses the **Ink & Parchment** palette in both light and dark modes. The theme toggle switches the same semantic colors without changing page layout or content placement. Surfaces are solid, corners are square, hover effects are limited to color changes, and scrollbars use the active theme colors. The footer uses a neutral theme-aware surface with high-contrast text and a light logo tile. Transactional emails use a consistent light palette and the RADES brand logo.
+The app uses the **Ink & Parchment** palette in both light and dark modes. The theme toggle switches the same semantic colors without changing page layout or content placement. Surfaces are solid, corners are square, hover effects are limited to color changes, and scrollbars use the active theme colors. The footer uses a neutral theme-aware surface with high-contrast text and a transparent logo that blends into the surface. Transactional emails use a consistent light palette and the transparent RADES brand logo.
 
 | Token | Light | Dark |
 | --- | --- | --- |

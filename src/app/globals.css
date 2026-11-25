@@ -245,8 +245,6 @@ a, button, input, textarea, select { transition: color 120ms ease, background-co
   color: var(--palette-footer-muted) !important;
 }
 .site-footer a:hover { color: var(--palette-footer-hover) !important; }
-.site-footer-logo { background-color: #fffdf6 !important; padding: 2px; }
-
 input:not([type="checkbox"]):not([type="radio"]), textarea, select {
   background-color: var(--palette-surface);
   color: var(--palette-ink);

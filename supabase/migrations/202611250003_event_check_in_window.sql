@@ -27,15 +27,15 @@ begin
   if event_row.status='cancelled' or ticket_row.status<>'active' or not attendee.active or registration_status<>'confirmed' then
     raise exception 'This ticket has been cancelled or is no longer active.' using errcode='P0001';
   end if;
-  select checked_in_at into prior_check_in from public.event_attendance where ticket_id=p_ticket_id;
-  if prior_check_in is not null then
-    return jsonb_build_object('alreadyCheckedIn',true,'checkedInAt',prior_check_in,'attendee',attendee.display_name,'email',attendee.email);
-  end if;
   if now() < event_row.starts_at then
     raise exception 'Check-in opens when the event starts.' using errcode='P0001';
   end if;
   if now() > event_row.ends_at then
     raise exception 'Check-in is closed because the event has ended.' using errcode='P0001';
+  end if;
+  select checked_in_at into prior_check_in from public.event_attendance where ticket_id=p_ticket_id;
+  if prior_check_in is not null then
+    return jsonb_build_object('alreadyCheckedIn',true,'checkedInAt',prior_check_in,'attendee',attendee.display_name,'email',attendee.email);
   end if;
   insert into public.event_attendance(ticket_id,event_id,checked_in_by) values(p_ticket_id,p_event_id,auth.uid())
     on conflict(ticket_id) do nothing returning true into newly_checked_in;

@@ -21,6 +21,9 @@ export async function POST(request: Request, { params }: Context) {
   const { data: admin } = await supabase.from("society_members").select("id").eq("society_id", event.society_id).eq("user_id", user.id).eq("status", "active").maybeSingle();
   const { data: profile } = await supabase.from("profiles").select("global_role").eq("id", user.id).maybeSingle();
   if (!admin && !["office", "super_admin"].includes(profile?.global_role ?? "")) return NextResponse.json({ error: "Only this society’s active admins can validate event tickets." }, { status: 403 });
+  const now = Date.now();
+  if (now < Date.parse(event.starts_at)) return NextResponse.json({ error: "Check-in opens when the event starts." }, { status: 409 });
+  if (now > Date.parse(event.ends_at)) return NextResponse.json({ error: "Check-in is closed because the event has ended." }, { status: 409 });
   const ticketId = value.data.slice("RADES-TICKET:".length);
   const { data: ticket } = await supabase.from("event_tickets").select("id,status,registration_member_id,event_id").eq("id", ticketId).eq("event_id", eventId).maybeSingle();
   if (!ticket) return NextResponse.json({ error: "This ticket does not belong to this event or is not recognized." }, { status: 404 });
@@ -28,8 +31,6 @@ export async function POST(request: Request, { params }: Context) {
   if (!member) return NextResponse.json({ error: "Ticket attendee information is unavailable." }, { status: 404 });
   const { data: actualRegistration } = await supabase.from("registrations").select("status,team_name").eq("id", member.registration_id).maybeSingle();
   const { data: attendance } = await supabase.from("event_attendance").select("checked_in_at").eq("ticket_id", ticket.id).maybeSingle();
-  if (!attendance?.checked_in_at && Date.now() < Date.parse(event.starts_at)) return NextResponse.json({ error: "Check-in opens when the event starts." }, { status: 409 });
-  if (!attendance?.checked_in_at && Date.now() > Date.parse(event.ends_at)) return NextResponse.json({ error: "Check-in is closed because the event has ended." }, { status: 409 });
   if (ticket.status !== "active" || !member.active || actualRegistration?.status !== "confirmed" || event.status === "cancelled") {
     return NextResponse.json({ error: "This ticket has been cancelled or is no longer active." }, { status: 409 });
   }

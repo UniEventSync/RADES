@@ -1,9 +1,12 @@
 node_modules/
 .next/
+.next-playwright/
 .env*
 !.env.example
 out/
 coverage/
+playwright-report/
+test-results/
 *.tsbuildinfo
 next-env.d.ts
 WORK_LOG.md

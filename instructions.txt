@@ -49,8 +49,9 @@ DEVELOPMENT
 - Use the versions and conventions already installed in this repository. Before
   changing Next.js code, read the relevant guide under
   `node_modules/next/dist/docs/` as required by `AGENTS.md`.
-- Useful commands: `npm run dev`, `npm run lint`, `npm run typecheck`, and
-  `npm run build`.
+- Useful commands: `npm run dev`, `npm run lint`, `npm run typecheck`,
+  `npm run test:e2e`, and `npm run build`. Playwright tests use isolated mock
+  backend data and do not require production credentials.
 - For work spanning features, use a focused branch per feature, verify it, merge
   it into the integration branch, then verify the complete integration branch.
 - Do not add a test framework or test suite unless requested; run existing

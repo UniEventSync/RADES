@@ -17,7 +17,20 @@ Fill in `.env.local` using the sections below. Configure the project’s existin
 npm run dev
 ```
 
-Open <http://localhost:3000>. `npm run build`, `npm run lint`, and `npm run typecheck` are available for local verification.
+Open <http://localhost:3000>. `npm run build`, `npm run lint`, `npm run typecheck`, and `npm run test:e2e` are available for local verification.
+
+## Automated browser tests
+
+Playwright tests cover public navigation, event search and filters, event details, responsive navigation, theme persistence, and signup validation. They start an isolated Next.js server with deterministic mock event data; no real Supabase, email, Stripe, or Google credentials are used.
+
+Install the browser once, then run the suite:
+
+```powershell
+npx playwright install chromium
+npm run test:e2e
+```
+
+GitHub Actions runs the browser tests, lint, and typecheck on every push and pull request. Failed browser runs upload their Playwright report and traces.
 
 ## Optional service setup
 

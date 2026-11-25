@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { UnpublishEventButton } from "@/components/unpublish-event-button";
 import { RetryEventRefundsButton } from "@/components/retry-event-refunds-button";
+import { eventVenueLabel } from "@/lib/events/taxonomy";
 
 export default async function EventAnalyticsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -11,7 +12,7 @@ export default async function EventAnalyticsPage({ params }: { params: Promise<{
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/sign-in?next=/admin/events/${id}/analytics`);
   const [{ data: event }, { data: profile }] = await Promise.all([
-    supabase.from("events").select("id,title,society_id,description,category,venue,starts_at,ends_at,status,capacity,price_pkr,registration_type,cancellation_reason,societies(name)").eq("id", id).maybeSingle(),
+    supabase.from("events").select("id,title,society_id,description,category,subcategory,venue,venues,starts_at,ends_at,status,capacity,price_pkr,registration_type,cancellation_reason,societies(name)").eq("id", id).maybeSingle(),
     supabase.from("profiles").select("global_role").eq("id", user.id).maybeSingle(),
   ]);
   if (!event) notFound();
@@ -71,8 +72,8 @@ export default async function EventAnalyticsPage({ params }: { params: Promise<{
     return `"${safeValue.replaceAll('"', '""')}"`;
   };
   const csvRows: unknown[][] = [
-    ["Metric", "Value"], ["Event", event.title], ["Society", societyName], ["Status", event.status], ["Phase", phase],
-    ["Venue", event.venue], ["Starts (PKT)", new Date(event.starts_at).toLocaleString("en-PK", { timeZone: "Asia/Karachi" })], ["Ends (PKT)", new Date(event.ends_at).toLocaleString("en-PK", { timeZone: "Asia/Karachi" })],
+    ["Metric", "Value"], ["Event", event.title], ["Society", societyName], ["Status", event.status], ["Phase", phase], ["Category", event.category], ["Subcategory", event.subcategory],
+    ["Venue(s)", eventVenueLabel(event.venues, event.venue)], ["Starts (PKT)", new Date(event.starts_at).toLocaleString("en-PK", { timeZone: "Asia/Karachi" })], ["Ends (PKT)", new Date(event.ends_at).toLocaleString("en-PK", { timeZone: "Asia/Karachi" })],
     ["Registration type", event.registration_type], ["Registered participants", registeredParticipants], ["Issued tickets", tickets?.length ?? 0], ["Check-ins", checkedIn], ["No-shows", noShows], ["Attendance percent", activeTickets.length ? attendanceRate.toFixed(1) : "Not yet measurable"],
     ["Capacity", event.capacity ?? "Unlimited"], ["Ticket price PKR", event.price_pkr], ["Gross captured PKR", grossRevenue], ["Refunded PKR", refundedRevenue], ["Refund pending PKR", pendingRefundAmount], ["Net retained PKR", netRevenue],
     ["Feedback responses", feedback?.length ?? 0], ["Average feedback rating", averageRating === null ? "No responses" : averageRating.toFixed(2)], ["Refund records", refundRows.length],
@@ -88,7 +89,7 @@ export default async function EventAnalyticsPage({ params }: { params: Promise<{
     </header>
     {reportDataUnavailable && <p role="status" className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">Some report data could not be loaded. Confirm the database setup and your reporting access, then refresh this page.</p>}
     <section aria-label="Event report metrics" className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{metrics.map(metric => <article key={metric.label} className={`rounded-xl border border-t-4 ${metric.accent} border-slate-200 bg-white p-5 shadow-sm`}><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{metric.label}</p><p className="mt-2 text-2xl font-bold tabular-nums">{metric.value}</p><p className="mt-1 text-xs text-slate-600">{metric.help}</p></article>)}</section>
-    <section className="mt-6 grid gap-5 lg:grid-cols-2"><article className="rounded-xl border border-slate-200 bg-white p-5"><h2 className="font-bold">Event details</h2><dl className="mt-4 grid grid-cols-2 gap-y-3 text-sm"><dt className="text-slate-500">Category</dt><dd>{event.category}</dd><dt className="text-slate-500">Venue</dt><dd>{event.venue}</dd><dt className="text-slate-500">Starts</dt><dd>{new Date(event.starts_at).toLocaleString("en-PK", { timeZone: "Asia/Karachi" })} PKT</dd><dt className="text-slate-500">Ends</dt><dd>{new Date(event.ends_at).toLocaleString("en-PK", { timeZone: "Asia/Karachi" })} PKT</dd></dl></article>
+    <section className="mt-6 grid gap-5 lg:grid-cols-2"><article className="rounded-xl border border-slate-200 bg-white p-5"><h2 className="font-bold">Event details</h2><dl className="mt-4 grid grid-cols-2 gap-y-3 text-sm"><dt className="text-slate-500">Category</dt><dd>{event.category}</dd><dt className="text-slate-500">Subcategory</dt><dd>{event.subcategory}</dd><dt className="text-slate-500">Venue(s)</dt><dd>{eventVenueLabel(event.venues, event.venue)}</dd><dt className="text-slate-500">Starts</dt><dd>{new Date(event.starts_at).toLocaleString("en-PK", { timeZone: "Asia/Karachi" })} PKT</dd><dt className="text-slate-500">Ends</dt><dd>{new Date(event.ends_at).toLocaleString("en-PK", { timeZone: "Asia/Karachi" })} PKT</dd></dl></article>
       <article className="rounded-xl border border-slate-200 bg-white p-5"><h2 className="font-bold">Attendance and refunds</h2><p className="mt-2 text-sm leading-6 text-slate-600">Attendance is based on unique ticket check-ins. No-shows are active tickets without a recorded check-in.</p><div className="mt-5 space-y-3" aria-label={`${checkedIn} of ${activeTickets.length} active ticket holders checked in`}><div><div className="mb-1 flex justify-between text-xs"><span>Checked in</span><span>{checkedIn} · {rateLabel}</span></div><div className="flex h-3 overflow-hidden rounded-full bg-slate-100"><div className="bg-emerald-600" style={{ width: `${attendanceRate}%` }}/><div className="bg-slate-300" style={{ width: `${noShowWidth}%` }}/></div></div><div className="flex justify-between text-xs text-slate-600"><span>No-shows</span><span>{noShows}</span></div></div>
         <div className="mt-5 border-t border-slate-200 pt-4"><h3 className="text-sm font-semibold">Refund status</h3>{refundRows.length ? <ul className="mt-3 space-y-2 text-sm">{refundRows.map(refund => <li key={refund.id} className="flex flex-wrap justify-between gap-2 rounded-lg bg-slate-50 p-3"><span>{refund.registration_id ? "Registration refund" : "Legacy record"}</span><span className="font-medium">PKR {refund.amount_pkr.toLocaleString()} · {refund.status.replaceAll("_", " ")}</span></li>)}</ul> : <p className="mt-2 text-sm text-slate-600">No refund records.</p>}{actualRefundRows.some(refund => ["pending", "processing", "failed"].includes(refund.status)) && event.status === "cancelled" && <RetryEventRefundsButton eventId={id}/>}</div>
         {event.cancellation_reason && <p className="mt-3 text-sm"><strong>Cancellation reason:</strong> {event.cancellation_reason}</p>}

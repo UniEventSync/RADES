@@ -7,3 +7,5 @@ coverage/
 *.tsbuildinfo
 next-env.d.ts
 WORK_LOG.md
+docs/wireframes/generate.py
+/docs/bugs.md

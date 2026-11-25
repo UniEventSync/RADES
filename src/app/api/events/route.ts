@@ -5,11 +5,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendTrackedEmail } from "@/lib/email/tracked-send";
 import { emailTemplates } from "@/lib/email/templates";
 import { isUploadedMediaUrl } from "@/lib/storage/media";
+import { eventCategories, eventSubcategories, eventVenues, isEventSubcategory } from "@/lib/events/taxonomy";
 import { STRIPE_MIN_REGISTRATION_PKR } from "@/lib/payments/constants";
-import { eventCategorySubcategories, eventVenues } from "@/lib/events/options";
 
 const plainText = (min: number, max: number) => z.string().trim().min(min).max(max).refine(value => !/[<>]/.test(value), "HTML markup is not allowed.");
-const eventInput = z.object({ societyId: z.string().uuid(), title: plainText(3,150), description: plainText(10,8000), category: plainText(2,50), subcategory: plainText(2,80), venues: z.array(z.enum(eventVenues)).min(1).max(eventVenues.length), startsAt: z.string().datetime({ offset: true }), endsAt: z.string().datetime({ offset: true }), capacity: z.number().int().positive().nullable().optional(), pricePkr: z.number().int().min(0).default(0), registrationType: z.enum(["solo", "team"]).default("solo"), teamMin: z.number().int().min(2).max(50).default(2), teamMax: z.number().int().min(2).max(50).default(5), image_url: z.string().trim().url().refine(isUploadedMediaUrl).or(z.literal("")).optional(), status: z.enum(["draft", "pending_patron"]).default("pending_patron") }).refine(value => value.teamMin <= value.teamMax, { message: "Maximum team size must be at least the minimum team size.", path: ["teamMax"] }).refine(value => eventCategorySubcategories[value.category]?.includes(value.subcategory), { message: "Choose a subcategory that belongs to the selected category.", path: ["subcategory"] });
+const eventInput = z.object({ societyId: z.string().uuid(), title: plainText(3,150), description: plainText(10,8000), category: z.enum(eventCategories), subcategory: z.enum(eventSubcategories), venue: plainText(2,200), venues: z.array(z.enum(eventVenues)).min(1).max(9), startsAt: z.string().datetime({ offset: true }), endsAt: z.string().datetime({ offset: true }), capacity: z.number().int().positive().nullable().optional(), pricePkr: z.number().int().min(0).default(0), registrationType: z.enum(["solo", "team"]).default("solo"), teamMin: z.number().int().min(2).max(50).default(2), teamMax: z.number().int().min(2).max(50).default(5), image_url: z.string().trim().url().refine(isUploadedMediaUrl).or(z.literal("")).optional(), status: z.enum(["draft", "pending_patron"]).default("pending_patron") }).refine(value => value.teamMin <= value.teamMax, { message: "Maximum team size must be at least the minimum team size.", path: ["teamMax"] }).refine(value => isEventSubcategory(value.category, value.subcategory), { message: "Choose a subcategory for the selected event category.", path: ["subcategory"] });
 type PatronRow = { user_id: string; profiles: { email?: string } | null };
 
 export async function POST(request: Request) {
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     patrons = (patronProfiles ?? []).map(profile => ({ user_id: profile.id, profiles: { email: profile.email } }));
     if (!patrons.length) return NextResponse.json({ error: "This society needs an assigned faculty patron before it can submit events." }, { status: 400 });
   }
-  const venue = input.data.venues.join(", ");
+  const venue = input.data.venue ?? input.data.venues.join(", ");
   const { data, error } = await supabase.from("events").insert({ society_id: input.data.societyId, title: input.data.title, description: input.data.description, category: input.data.category, subcategory: input.data.subcategory, venue, venues: input.data.venues, starts_at: input.data.startsAt, ends_at: input.data.endsAt, capacity: input.data.capacity ?? null, price_pkr: input.data.pricePkr, registration_type: input.data.registrationType, team_min: input.data.teamMin, team_max: input.data.teamMax, image_url: input.data.image_url || null, status: input.data.status, created_by: user.id }).select("id").single();
   if (error?.code === "23P01") return NextResponse.json({ error: "This society already has an event scheduled during that time. Choose a different time." }, { status: 409 });
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });

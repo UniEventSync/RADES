@@ -6,11 +6,11 @@ import { sendTrackedEmail } from "@/lib/email/tracked-send";
 import { emailTemplates } from "@/lib/email/templates";
 import { sendEventParticipantNotices } from "@/lib/email/event-participant-notifications";
 import { isUploadedMediaUrl } from "@/lib/storage/media";
+import { eventCategories, eventSubcategories, eventVenues, isEventSubcategory } from "@/lib/events/taxonomy";
 import { STRIPE_MIN_REGISTRATION_PKR } from "@/lib/payments/constants";
-import { eventCategorySubcategories, eventVenues } from "@/lib/events/options";
 
 const plainText = (min: number, max: number) => z.string().trim().min(min).max(max).refine(value => !/[<>]/.test(value), "HTML markup is not allowed.");
-const inputSchema = z.object({ title: plainText(3,150), description: plainText(10,8000), category: plainText(2,50), subcategory: plainText(2,80), venues: z.array(z.enum(eventVenues)).min(1).max(eventVenues.length), startsAt: z.string().datetime({ offset: true }), endsAt: z.string().datetime({ offset: true }), capacity: z.number().int().positive().nullable(), pricePkr: z.number().int().min(0), registrationType: z.enum(["solo", "team"]), teamMin: z.number().int().min(2).max(50).default(2), teamMax: z.number().int().min(2).max(50).default(5), image_url: z.string().trim().url().refine(isUploadedMediaUrl).or(z.literal("")).optional(), status: z.enum(["draft", "pending_patron"]) }).refine(value => value.teamMin <= value.teamMax, { message: "Maximum team size must be at least the minimum team size.", path: ["teamMax"] }).refine(value => eventCategorySubcategories[value.category]?.includes(value.subcategory), { message: "Choose a subcategory that belongs to the selected category.", path: ["subcategory"] });
+const inputSchema = z.object({ title: plainText(3,150), description: plainText(10,8000), category: z.enum(eventCategories), subcategory: z.enum(eventSubcategories), venue: plainText(2,200).optional(), venues: z.array(z.enum(eventVenues)).min(1).max(9), startsAt: z.string().datetime({ offset: true }), endsAt: z.string().datetime({ offset: true }), capacity: z.number().int().positive().nullable(), pricePkr: z.number().int().min(0), registrationType: z.enum(["solo", "team"]), teamMin: z.number().int().min(2).max(50).default(2), teamMax: z.number().int().min(2).max(50).default(5), image_url: z.string().trim().url().refine(isUploadedMediaUrl).or(z.literal("")).optional(), status: z.enum(["draft", "pending_patron"]) }).refine(value => value.teamMin <= value.teamMax, { message: "Maximum team size must be at least the minimum team size.", path: ["teamMax"] }).refine(value => isEventSubcategory(value.category, value.subcategory), { message: "Choose a subcategory for the selected event category.", path: ["subcategory"] });
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params; const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
@@ -42,7 +42,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (!patrons.length) return NextResponse.json({ error: "This society needs an assigned faculty patron before an event can be submitted." }, { status: 400 });
   }
   const nextStatus = ["pending_ossie", "published", "rejected"].includes(event.status) ? "pending_patron" : input.data.status;
-  const venue = input.data.venues.join(", ");
+  const venue = input.data.venue ?? input.data.venues.join(", ");
   const { data: updatedEvent, error } = await supabase.from("events").update({ title: input.data.title, description: input.data.description, category: input.data.category, subcategory: input.data.subcategory, venue, venues: input.data.venues, starts_at: input.data.startsAt, ends_at: input.data.endsAt, capacity: input.data.capacity, price_pkr: input.data.pricePkr, registration_type: input.data.registrationType, team_min: input.data.teamMin, team_max: input.data.teamMax, image_url: input.data.image_url || event.image_url || null, status: nextStatus, is_public: event.is_public || event.status === "published", rejection_reason: null }).eq("id", id).eq("status", event.status).select("id,image_url,updated_at").maybeSingle();
   if (error?.code === "23P01") return NextResponse.json({ error: "This society already has an event scheduled during that time. Choose a different time." }, { status: 409 });
   if (error) return NextResponse.json({ error: error.message }, { status: 403 });
@@ -52,7 +52,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     for(const patron of patrons){const email=patron.profiles?.email;if(email)await sendTrackedEmail({to:email,...emailTemplates.eventSubmitted(input.data.title,url)},{userId:patron.user_id,eventId:id,type:"event_resubmitted_for_patron_review"});}
   }
   const participantDetailsChanged = event.status === "published" && (
-    event.title !== input.data.title || event.description !== input.data.description || event.category !== input.data.category || event.subcategory !== input.data.subcategory || JSON.stringify(event.venues ?? (event.venue ? [event.venue] : [])) !== JSON.stringify(input.data.venues) ||
+    event.title !== input.data.title || event.description !== input.data.description || event.category !== input.data.category || event.subcategory !== input.data.subcategory || event.venue !== venue || JSON.stringify(event.venues) !== JSON.stringify(input.data.venues) ||
     Date.parse(event.starts_at) !== Date.parse(input.data.startsAt) || Date.parse(event.ends_at) !== Date.parse(input.data.endsAt) || event.capacity !== input.data.capacity ||
     event.price_pkr !== input.data.pricePkr || event.registration_type !== input.data.registrationType || event.team_min !== input.data.teamMin || event.team_max !== input.data.teamMax
   );

@@ -8,6 +8,8 @@ export default async function DashboardPage() {
   const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser(); if (!user) redirect("/sign-in?next=/dashboard");
   const { data: profile } = await supabase.from("profiles").select("first_name,last_name,account_type,global_role").eq("id",user.id).maybeSingle();
   if (!profile) redirect("/");
+  const { data: societyAdminAccess } = await supabase.from("society_members").select("id").eq("user_id",user.id).eq("status","active").eq("role","panelist").limit(1).maybeSingle();
+  if (societyAdminAccess) redirect("/admin");
   const [membershipResult, patronResult, eventResult, societyResult] = await Promise.all([
     supabase.from("society_members").select("society_id,user_id,role,status,societies(id,name,slug,description,logo_url)").eq("user_id",user.id).eq("status","active"),
     supabase.from("society_patrons").select("society_id,user_id,societies(id,name,slug,description,logo_url)").eq("user_id",user.id),

@@ -1,11 +1,21 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { CheckCircle2, Clock3, XCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe/server";
 import { sendRegistrationConfirmationEmails } from "@/lib/email/registration-confirmations";
 import { sendTicketInformationEmails } from "@/lib/email/ticket-information";
+
+async function getAppUrl() {
+  if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, "");
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host")?.split(",")[0]?.trim() ?? requestHeaders.get("host");
+  if (!host) return "http://localhost:3000";
+  const protocol = requestHeaders.get("x-forwarded-proto")?.split(",")[0]?.trim() ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${protocol}://${host}`;
+}
 
 export default async function CheckoutSuccessPage({ searchParams }: { searchParams: Promise<{ session_id?: string }> }) {
   const { session_id: sessionId } = await searchParams;
@@ -38,9 +48,10 @@ export default async function CheckoutSuccessPage({ searchParams }: { searchPara
             p_currency: session.currency ?? "",
             p_payment_status: session.payment_status,
           });
+          const siteUrl = await getAppUrl();
           await Promise.all([
-            sendRegistrationConfirmationEmails(admin, initialPayment.data.registration_id, process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
-            sendTicketInformationEmails(admin, initialPayment.data.registration_id, process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+            sendRegistrationConfirmationEmails(admin, initialPayment.data.registration_id, siteUrl),
+            sendTicketInformationEmails(admin, initialPayment.data.registration_id, siteUrl),
           ]).catch(error => console.error("RADES success-page ticket delivery could not be attempted", error));
         }
       }

@@ -36,5 +36,7 @@ Statuses below are based on user reports, not a direct query against Supabase. T
 | `202611200013_feedback_eligibility.sql` | Reported applied | User confirmed repository migrations applied on 2026-11-20. Requires a completed, non-cancelled event and an active confirmed student registration with recorded ticket check-in; adds one-response-per-student/event protection and safe database RPCs. Stops without deleting data if duplicate feedback rows already exist. |
 | `202611240001_event_subcategories_and_venues.sql` | Reported applied | User confirmed application in Supabase on 2026-11-24. Adds the event subcategory and multi-venue fields with the allowed values and public read access. |
 | `202611250001_public_visibility_on_approval.sql` | Reported applied | User confirmed application in Supabase on 2026-11-25. |
+| `202611250002_event_registration_edit_guard.sql` | Not yet reported applied | Prevents lowering capacity below active seats or changing registration type/price while registrations or payment holds remain. |
+| `202611250003_event_check_in_window.sql` | Not yet reported applied | Restricts new ticket check-ins to the event's start/end time window. |
 
 Do not rerun migrations already applied. The project owner reported all repository migrations applied on 2026-11-20; the remote schema was not independently queried.

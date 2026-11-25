@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
-const schema = z.object({ rating: z.number().int().min(1).max(5), comments: z.string().trim().min(10).max(2000) });
+const schema = z.object({ rating: z.number().int().min(1).max(5), comments: z.string().trim().min(10).max(2000).refine(value => !/[<>]/.test(value), "HTML markup is not allowed in feedback.") });
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

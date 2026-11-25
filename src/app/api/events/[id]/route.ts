@@ -7,7 +7,7 @@ import { emailTemplates } from "@/lib/email/templates";
 import { sendEventParticipantNotices } from "@/lib/email/event-participant-notifications";
 import { isUploadedMediaUrl } from "@/lib/storage/media";
 import { eventCategories, eventSubcategories, eventVenues, isEventSubcategory } from "@/lib/events/taxonomy";
-import { STRIPE_MIN_REGISTRATION_PKR } from "@/lib/payments/constants";
+import { STRIPE_MAX_REGISTRATION_PKR, STRIPE_MIN_REGISTRATION_PKR } from "@/lib/payments/constants";
 
 const plainText = (min: number, max: number) => z.string().trim().min(min).max(max).refine(value => !/[<>]/.test(value), "HTML markup is not allowed.");
 const inputSchema = z.object({ title: plainText(3,150), description: plainText(10,8000), category: z.enum(eventCategories), subcategory: z.enum(eventSubcategories), venue: plainText(2,200).optional(), venues: z.array(z.enum(eventVenues)).min(1).max(9), startsAt: z.string().datetime({ offset: true }), endsAt: z.string().datetime({ offset: true }), capacity: z.number().int().positive().nullable(), pricePkr: z.number().int().min(0), registrationType: z.enum(["solo", "team"]), teamMin: z.number().int().min(2).max(50).default(2), teamMax: z.number().int().min(2).max(50).default(5), image_url: z.string().trim().url().refine(isUploadedMediaUrl).or(z.literal("")).optional(), status: z.enum(["draft", "pending_patron"]) }).refine(value => value.teamMin <= value.teamMax, { message: "Maximum team size must be at least the minimum team size.", path: ["teamMax"] }).refine(value => isEventSubcategory(value.category, value.subcategory), { message: "Choose a subcategory for the selected event category.", path: ["subcategory"] });
@@ -16,6 +16,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (!user) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   const input = inputSchema.safeParse(await request.json()); if (!input.success) return NextResponse.json({ error: input.error.issues[0]?.message }, { status: 400 });
   if (new Date(input.data.startsAt) <= new Date()) return NextResponse.json({ error: "An event must start in the future." }, { status: 400 });
+  if (input.data.pricePkr > STRIPE_MAX_REGISTRATION_PKR) return NextResponse.json({ error: `Paid event registration cannot exceed PKR ${STRIPE_MAX_REGISTRATION_PKR.toLocaleString()}.` }, { status: 400 });
   if (input.data.pricePkr > 0 && input.data.pricePkr < STRIPE_MIN_REGISTRATION_PKR) return NextResponse.json({ error: `Paid event registration must be at least PKR ${STRIPE_MIN_REGISTRATION_PKR} total. Use 0 for a free event.` }, { status: 400 });
   if (new Date(input.data.endsAt) <= new Date(input.data.startsAt)) return NextResponse.json({ error: "Choose an end date and time later than the event start." }, { status: 400 });
   const { data: event } = await supabase.from("events").select("id,society_id,status,image_url,is_public,title,description,category,subcategory,venue,venues,starts_at,ends_at,capacity,price_pkr,registration_type,team_min,team_max").eq("id", id).maybeSingle();
@@ -45,6 +46,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const venue = input.data.venue ?? input.data.venues.join(", ");
   const { data: updatedEvent, error } = await supabase.from("events").update({ title: input.data.title, description: input.data.description, category: input.data.category, subcategory: input.data.subcategory, venue, venues: input.data.venues, starts_at: input.data.startsAt, ends_at: input.data.endsAt, capacity: input.data.capacity, price_pkr: input.data.pricePkr, registration_type: input.data.registrationType, team_min: input.data.teamMin, team_max: input.data.teamMax, image_url: input.data.image_url || event.image_url || null, status: nextStatus, is_public: event.is_public || event.status === "published", rejection_reason: null }).eq("id", id).eq("status", event.status).select("id,image_url,updated_at").maybeSingle();
   if (error?.code === "23P01") return NextResponse.json({ error: "This society already has an event scheduled during that time. Choose a different time." }, { status: 409 });
+  if (error?.code === "23514") return NextResponse.json({ error: error.message }, { status: 409 });
   if (error) return NextResponse.json({ error: error.message }, { status: 403 });
   if (!updatedEvent) return NextResponse.json({ error: "The event changed while you were editing. Refresh it before saving again." }, { status: 409 });
   if (resubmitting) {

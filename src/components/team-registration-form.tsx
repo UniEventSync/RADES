@@ -7,11 +7,11 @@ import type { EventItem } from "@/lib/events/demo";
 import type { RegistrationPreflight } from "@/components/solo-registration-form";
 
 type Profile = { firstName: string; lastName: string; email: string; phone: string };
-type Teammate = { email: string; state: "idle" | "checking" | "valid" | "invalid"; name?: string; message?: string };
+type Teammate = { email: string; state: "idle" | "checking" | "valid" | "invalid"; message?: string };
 const field = "mt-1.5 h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-700 focus:ring-4 focus:ring-blue-100";
 const pkt = { timeZone: "Asia/Karachi" } as const;
 
-function TeammateField({ eventId, index, member, onChange, onLookup, onRemove, canRemove }: { eventId: string; index: number; member: Teammate; onChange: (value: string) => void; onLookup: (email: string, result: { valid: boolean; name?: string; message?: string }) => void; onRemove: () => void; canRemove: boolean }) {
+function TeammateField({ eventId, index, member, onChange, onLookup, onRemove, canRemove }: { eventId: string; index: number; member: Teammate; onChange: (value: string) => void; onLookup: (email: string, result: { valid: boolean; message?: string }) => void; onRemove: () => void; canRemove: boolean }) {
   useEffect(() => {
     const email = member.email.trim().toLowerCase();
     if (!email) return;
@@ -21,7 +21,7 @@ function TeammateField({ eventId, index, member, onChange, onLookup, onRemove, c
         const response = await fetch(`/api/events/${eventId}/register-team/lookup`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) });
         const body = await response.json();
         if (!active) return;
-        onLookup(email, { valid: response.ok, name: response.ok ? `${body.firstName} ${body.lastName}` : undefined, message: body.error });
+        onLookup(email, { valid: response.ok, message: body.error });
       } catch {
         if (active) onLookup(email, { valid: false, message: "Could not verify this email right now." });
       }
@@ -32,7 +32,7 @@ function TeammateField({ eventId, index, member, onChange, onLookup, onRemove, c
   return <div className="rounded-xl border border-slate-200 p-3">
     <div className="flex items-end gap-2"><label className="min-w-0 flex-1 text-sm font-semibold" htmlFor={`member-${index}`}>Member {index + 2} Institutional Email{index + 2 > 2 && <span className="font-normal text-slate-500"> (optional until minimum is met)</span>}<input id={`member-${index}`} className={field} type="email" inputMode="email" autoComplete="off" value={member.email} maxLength={254} onChange={event => onChange(event.target.value)} placeholder="name.surname.12345@khi.iba.edu.pk" aria-describedby={`member-status-${index}`}/></label>{canRemove && <button type="button" onClick={onRemove} aria-label={`Remove member ${index + 2}`} className="mb-0.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100"><Trash2 size={17}/></button>}</div>
     <p id={`member-status-${index}`} aria-live="polite" className={`mt-2 text-xs ${member.state === "valid" ? "text-green-800" : member.state === "invalid" ? "text-red-800" : "text-slate-500"}`}>
-      {member.state === "checking" ? "Checking verified student account…" : member.state === "valid" ? `Verified RADES student: ${member.name}` : member.state === "invalid" ? member.message : "Use a verified IBA student account that has already registered in RADES."}
+      {member.state === "checking" ? "Checking student email format…" : member.state === "valid" ? "Email format accepted. RADES checks account eligibility when your team is submitted." : member.state === "invalid" ? member.message : "Use an IBA student email. Account eligibility is checked when your team is submitted."}
     </p>
   </div>;
 }
@@ -47,7 +47,7 @@ export function TeamRegistrationForm({ event, profile, preflight }: { event: Eve
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ registrationId: string; status: string; paymentRequired: boolean; teamSize: number; confirmationEmail?: { sent: number; failed: number } } | null>(null);
-  const [lookupResults, setLookupResults] = useState<Record<string, { valid: boolean; name?: string; message?: string }>>({});
+  const [lookupResults, setLookupResults] = useState<Record<string, { valid: boolean; message?: string }>>({});
   const conflicts = preflight?.scheduleConflicts ?? [];
   const occupied = members.filter(member => member.email.trim()).length + 1;
   const visibleCount = Math.max(min - 1, members.length);
@@ -63,11 +63,11 @@ export function TeamRegistrationForm({ event, profile, preflight }: { event: Eve
   }), [members, visibleCount, lookupResults]);
 
   const changeMember = useCallback((index: number, value: string) => {
-    setMembers(current => current.map((member, item) => item !== index ? member : { email: value, state: value.trim() ? "checking" : "idle", name: undefined, message: undefined }));
+    setMembers(current => current.map((member, item) => item !== index ? member : { email: value, state: value.trim() ? "checking" : "idle", message: undefined }));
   }, []);
-  const applyLookup = useCallback((email: string, result: { valid: boolean; name?: string; message?: string }) => {
+  const applyLookup = useCallback((email: string, result: { valid: boolean; message?: string }) => {
     setLookupResults(current => ({ ...current, [email]: result }));
-    setMembers(current => current.map(member => member.email.trim().toLowerCase() === email ? { ...member, state: result.valid ? "valid" : "invalid", name: result.name, message: result.message } : member));
+    setMembers(current => current.map(member => member.email.trim().toLowerCase() === email ? { ...member, state: result.valid ? "valid" : "invalid", message: result.message } : member));
   }, []);
   const submit = async (submission: React.FormEvent<HTMLFormElement>) => {
     submission.preventDefault(); setError("");
@@ -88,7 +88,7 @@ export function TeamRegistrationForm({ event, profile, preflight }: { event: Eve
     finally { setBusy(false); }
   };
 
-  if (result) return <section aria-live="polite" className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-6 shadow-sm sm:p-8"><span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-700"><Check size={30}/></span><h2 className="mt-4 text-center text-2xl font-bold text-green-950">{result.paymentRequired ? "Team place held" : "Team registration confirmed"}</h2><p className="mt-2 text-center text-sm text-green-900">{result.paymentRequired ? "Your team’s places are held for 15 minutes while payment is completed." : `${result.teamSize} team members are registered. Individual digital tickets will be available in each member’s profile.`}</p>{result.status === "confirmed" && <p className="mt-2 text-center text-sm text-green-900">{result.confirmationEmail?.sent ? `Confirmation emails sent to ${result.confirmationEmail.sent} team member${result.confirmationEmail.sent === 1 ? "" : "s"}.` : "Your team is registered. A confirmation email could not be delivered; members can view their event details in RADES profiles."}{Boolean(result.confirmationEmail?.failed) && " Some email addresses need attention."}</p>}<div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row"><Link href="/profile" className="inline-flex h-11 items-center justify-center rounded-lg bg-blue-700 px-5 text-sm font-semibold text-white hover:bg-blue-800">View registration history</Link><Link href={`/events/${event.id}`} className="inline-flex h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-800 hover:bg-slate-50">Back to event</Link></div></section>;
+  if (result) return <section aria-live="polite" className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-6 shadow-sm sm:p-8"><span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-700"><Check size={30}/></span><h2 className="mt-4 text-center text-2xl font-bold text-green-950">{result.paymentRequired ? "Team place held" : "Team registration confirmed"}</h2><p className="mt-2 text-center text-sm text-green-900">{result.paymentRequired ? "Your team’s places are held while you complete checkout; the checkout session expires in about 30 minutes." : `${result.teamSize} team members are registered. Individual digital tickets will be available in each member’s profile.`}</p>{result.status === "confirmed" && <p className="mt-2 text-center text-sm text-green-900">{result.confirmationEmail?.sent ? `Confirmation emails sent to ${result.confirmationEmail.sent} team member${result.confirmationEmail.sent === 1 ? "" : "s"}.` : "Your team is registered. A confirmation email could not be delivered; members can view their event details in RADES profiles."}{Boolean(result.confirmationEmail?.failed) && " Some email addresses need attention."}</p>}<div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row"><Link href="/profile" className="inline-flex h-11 items-center justify-center rounded-lg bg-blue-700 px-5 text-sm font-semibold text-white hover:bg-blue-800">View registration history</Link><Link href={`/events/${event.id}`} className="inline-flex h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-800 hover:bg-slate-50">Back to event</Link></div></section>;
 
   return <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
     <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5"><div><h2 className="text-lg font-bold">{event.title}</h2><p className="mt-2 flex items-center gap-2 text-sm text-slate-600"><CalendarDays size={16} className="text-blue-700"/>{start.toLocaleDateString("en-PK", { dateStyle: "medium", ...pkt })} · {formatRange(event.starts_at, event.ends_at)}</p><p className="mt-1 flex items-center gap-2 text-sm text-slate-600"><MapPin size={16} className="text-blue-700"/>{event.venue}</p></div><span className="rounded-full bg-blue-50 px-3 py-1.5 text-sm font-bold text-blue-800">{(event.price_pkr ?? 0) === 0 ? "FREE" : `PKR ${(event.price_pkr ?? 0).toLocaleString()} total`}</span></div>

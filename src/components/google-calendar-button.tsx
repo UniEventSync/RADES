@@ -1,7 +1,7 @@
 "use client";
 
 import Script from "next/script";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState, useSyncExternalStore } from "react";
 import { CalendarPlus, LoaderCircle } from "lucide-react";
 
 type TokenResponse = { access_token?: string; error?: string; error_description?: string };
@@ -12,15 +12,39 @@ declare global {
   }
 }
 
-export function GoogleCalendarButton({ event }: { event: { id: string; title: string; description?: string; startsAt: string; endsAt: string; venue: string; url: string } }) {
+function subscribeToCalendarStorage(storageKey: string, callback: () => void) {
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === storageKey) callback();
+  };
+  const onLocalUpdate = (event: Event) => {
+    if (event instanceof CustomEvent && event.detail === storageKey) callback();
+  };
+  window.addEventListener("storage", onStorage);
+  window.addEventListener("rades-calendar-storage-change", onLocalUpdate);
+  return () => {
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener("rades-calendar-storage-change", onLocalUpdate);
+  };
+}
+
+export function GoogleCalendarButton({ event, userId }: { event: { id: string; title: string; description?: string; startsAt: string; endsAt: string; venue: string; url: string }; userId: string }) {
   const [scriptReady, setScriptReady] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [added, setAdded] = useState(() => typeof window !== "undefined" && window.localStorage.getItem(`rades-calendar:${event.id}`) === "1");
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
   const [calendarLink, setCalendarLink] = useState("");
   const tokenClient = useRef<TokenClient | null>(null);
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const storageKey = `rades-calendar:${userId}:${event.id}`;
+  const subscribe = useCallback((callback: () => void) => subscribeToCalendarStorage(storageKey, callback), [storageKey]);
+  const getSnapshot = useCallback(() => window.localStorage.getItem(storageKey) === "1", [storageKey]);
+  const getServerSnapshot = useCallback(() => false, []);
+  const added = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  function markAdded() {
+    window.localStorage.setItem(storageKey, "1");
+    window.dispatchEvent(new CustomEvent("rades-calendar-storage-change", { detail: storageKey }));
+  }
 
   function showError(value: string) { setError(true); setMessage(value); setBusy(false); }
   function addEvent(accessToken: string) {
@@ -37,15 +61,14 @@ export function GoogleCalendarButton({ event }: { event: { id: string; title: st
       headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
       body: JSON.stringify(googleEvent),
     }).then(async response => {
-      if (response.status === 409) { setError(false); setMessage("This event is already in your Google Calendar."); setAdded(true); setBusy(false); window.localStorage.setItem(`rades-calendar:${event.id}`, "1"); return; }
+      if (response.status === 409) { setError(false); setMessage("This event is already in your Google Calendar."); markAdded(); setBusy(false); return; }
       const body = await response.json().catch(() => null) as { htmlLink?: string; error?: { message?: string } } | null;
       if (!response.ok) { showError(body?.error?.message ?? "Google Calendar could not add this event. Check your Google account permissions and try again."); return; }
       setError(false);
       setMessage(body?.htmlLink ? "Added to Google Calendar." : "Added to Google Calendar successfully.");
       setCalendarLink(body?.htmlLink ?? "");
-      setAdded(true);
+      markAdded();
       setBusy(false);
-      window.localStorage.setItem(`rades-calendar:${event.id}`, "1");
     }).catch(() => showError("Could not connect to Google Calendar. Check your connection and try again."));
   }
 

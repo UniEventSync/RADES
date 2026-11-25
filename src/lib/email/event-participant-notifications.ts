@@ -23,9 +23,21 @@ async function sendParticipantNotice(admin: SupabaseClient, member: { id: string
 export async function sendEventParticipantNotices(admin: SupabaseClient, eventId: string, siteUrl: string, type: "event_update" | "event_cancelled", reason?: string, notificationKey = "default"): Promise<ParticipantNotificationSummary> {
   const { data: event } = await admin.from("events").select("id,title,starts_at,ends_at,venue").eq("id", eventId).maybeSingle();
   if (!event) return { sent: 0, failed: 0, skipped: 0 };
-  const { data: registrations, error } = await admin.from("registrations").select("id").eq("event_id", eventId).in("status", type === "event_cancelled" ? ["cancelled", "refunded"] : ["confirmed"]);
+  const { data: registrations, error } = await admin.from("registrations").select("id,amount_pkr").eq("event_id", eventId).in("status", type === "event_cancelled" ? ["cancelled", "refunded"] : ["confirmed"]);
   if (error) throw new Error("Could not load event participants for notification.");
-  const ids = (registrations ?? []).map(row => row.id);
+  let eligibleRegistrations = registrations ?? [];
+  if (type === "event_cancelled") {
+    const paidRegistrationIds = eligibleRegistrations.filter(row => row.amount_pkr > 0).map(row => row.id);
+    const { data: payments, error: paymentError } = paidRegistrationIds.length
+      ? await admin.from("event_payments").select("registration_id,status").in("registration_id", paidRegistrationIds)
+      : { data: [], error: null };
+    if (paymentError) throw new Error("Could not verify event participant payment status.");
+    const paidOrRefundedIds = new Set((payments ?? [])
+      .filter(payment => ["paid", "refund_pending", "refunded"].includes(payment.status))
+      .map(payment => payment.registration_id));
+    eligibleRegistrations = eligibleRegistrations.filter(row => row.amount_pkr === 0 || paidOrRefundedIds.has(row.id));
+  }
+  const ids = eligibleRegistrations.map(row => row.id);
   if (!ids.length) return { sent: 0, failed: 0, skipped: 0 };
   const { data: members, error: membersError } = await admin.from("registration_members").select("id,user_id,email").in("registration_id", ids);
   if (membersError) throw new Error("Could not load event participant emails.");

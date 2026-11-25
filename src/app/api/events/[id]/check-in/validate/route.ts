@@ -16,7 +16,7 @@ export async function POST(request: Request, { params }: Context) {
   if (!parsed.success) return NextResponse.json({ error: "Scan a ticket or enter its code." }, { status: 400 });
   const value = ticketValue.safeParse(parsed.data.value);
   if (!value.success) return NextResponse.json({ error: "This is not a RADES event ticket." }, { status: 400 });
-  const { data: event } = await supabase.from("events").select("id,title,society_id,status").eq("id", eventId).maybeSingle();
+  const { data: event } = await supabase.from("events").select("id,title,society_id,status,starts_at,ends_at").eq("id", eventId).maybeSingle();
   if (!event) return NextResponse.json({ error: "Event not found." }, { status: 404 });
   const { data: admin } = await supabase.from("society_members").select("id").eq("society_id", event.society_id).eq("user_id", user.id).eq("status", "active").maybeSingle();
   const { data: profile } = await supabase.from("profiles").select("global_role").eq("id", user.id).maybeSingle();
@@ -28,6 +28,8 @@ export async function POST(request: Request, { params }: Context) {
   if (!member) return NextResponse.json({ error: "Ticket attendee information is unavailable." }, { status: 404 });
   const { data: actualRegistration } = await supabase.from("registrations").select("status,team_name").eq("id", member.registration_id).maybeSingle();
   const { data: attendance } = await supabase.from("event_attendance").select("checked_in_at").eq("ticket_id", ticket.id).maybeSingle();
+  if (!attendance?.checked_in_at && Date.now() < Date.parse(event.starts_at)) return NextResponse.json({ error: "Check-in opens when the event starts." }, { status: 409 });
+  if (!attendance?.checked_in_at && Date.now() > Date.parse(event.ends_at)) return NextResponse.json({ error: "Check-in is closed because the event has ended." }, { status: 409 });
   if (ticket.status !== "active" || !member.active || actualRegistration?.status !== "confirmed" || event.status === "cancelled") {
     return NextResponse.json({ error: "This ticket has been cancelled or is no longer active." }, { status: 409 });
   }

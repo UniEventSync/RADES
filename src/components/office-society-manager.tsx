@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { UserPlus, UsersRound, Building2, Undo2 } from "lucide-react";
+import Image from "next/image";
+import { UserPlus, UsersRound, Building2, Undo2, Trash2 } from "lucide-react";
 
 export type SocietyAssignmentChange = { email: string; role: "panelist" | "patron"; action: "assign" | "remove" };
-type Person = { email?: string; first_name?: string; last_name?: string } | null;
+type Person = { email?: string; first_name?: string; last_name?: string; avatar_url?: string | null } | null;
 type SocietyAssignment = { id?: string; user_id: string; status?: string; profiles?: Person };
 type ManagedSociety = {
   id: string; name: string; slug: string; description?: string | null; contact_email?: string | null; is_active?: boolean;
@@ -12,7 +13,7 @@ type ManagedSociety = {
 const field = "mt-1.5 h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100";
 const displayName = (person: Person) => [person?.first_name, person?.last_name].filter(Boolean).join(" ") || person?.email || "Invited member";
 
-export function OfficeSocietyManager({ society, name, slug, description, contactEmail, isActive, setName, setSlug, setDescription, setContactEmail, setIsActive, changes, onStageAdd, onStageRemove, onCancel, onSave, busy }: {
+export function OfficeSocietyManager({ society, name, slug, description, contactEmail, isActive, setName, setSlug, setDescription, setContactEmail, setIsActive, changes, onStageAdd, onStageRemove, onCancel, onSave, onDelete, busy }: {
   society: ManagedSociety;
   name: string; slug: string; description: string; contactEmail: string; isActive: boolean;
   setName: (value: string) => void; setSlug: (value: string) => void; setDescription: (value: string) => void;
@@ -20,7 +21,7 @@ export function OfficeSocietyManager({ society, name, slug, description, contact
   changes: SocietyAssignmentChange[];
   onStageAdd: (email: string, role: SocietyAssignmentChange["role"]) => Promise<boolean>;
   onStageRemove: (email: string, role: SocietyAssignmentChange["role"]) => void;
-  onCancel: () => void; onSave: () => void; busy: boolean;
+  onCancel: () => void; onSave: () => void; onDelete: () => void; busy: boolean;
 }) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<SocietyAssignmentChange["role"]>("panelist");
@@ -32,7 +33,7 @@ export function OfficeSocietyManager({ society, name, slug, description, contact
     const change = staged(assignmentEmail, assignmentRole);
     const pendingRemoval = change?.action === "remove";
     return <li key={fallbackId} className={`flex min-w-0 items-center gap-3 rounded-xl border p-3 ${pendingRemoval ? "society-assignment-row-pending border-amber-200 bg-amber-50/70" : "border-slate-200 bg-white"}`}>
-      <span aria-hidden className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${assignmentRole === "patron" ? "bg-emerald-50 text-emerald-800" : "bg-blue-50 text-blue-800"}`}>{(person?.first_name?.[0] ?? assignmentEmail[0] ?? "?").toUpperCase()}</span>
+      <span aria-hidden className={`relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold ${assignmentRole === "patron" ? "bg-emerald-50 text-emerald-800" : "bg-blue-50 text-blue-800"}`}>{person?.avatar_url ? <Image src={person.avatar_url} alt="" fill unoptimized sizes="40px" className="object-cover"/> : (person?.first_name?.[0] ?? assignmentEmail[0] ?? "?").toUpperCase()}</span>
       <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{displayName(person)}</p><p className="truncate text-xs text-slate-500">{assignmentEmail || "Email unavailable"}</p></div>
       {pendingRemoval ? <span className="society-assignment-pending-label text-xs font-semibold text-amber-900">Remove on save</span> : <span className="society-assignment-role-badge rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{assignmentRole === "patron" ? "Faculty patron" : "Society admin"}</span>}
       {assignmentEmail && <button type="button" disabled={busy} onClick={() => onStageRemove(assignmentEmail, assignmentRole)} aria-label={pendingRemoval ? "Undo removal" : "Remove assignment"} title={pendingRemoval ? "Undo removal" : "Remove assignment"} className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition disabled:opacity-50 ${pendingRemoval ? "society-assignment-undo-button border-amber-300 bg-amber-100 text-amber-950 hover:bg-amber-200" : "society-assignment-remove-button border-slate-300 bg-slate-50 text-slate-800 hover:border-red-300 hover:bg-red-50 hover:text-red-800"}`}>{pendingRemoval ? <><Undo2 aria-hidden size={16} strokeWidth={2.5}/><span>Undo</span></> : <span>Remove</span>}</button>}
@@ -52,6 +53,11 @@ export function OfficeSocietyManager({ society, name, slug, description, contact
         {changes.length > 0 && <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs leading-5 text-blue-950 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-100">{changes.filter(change => change.action === "assign").length} assignment(s) to add and {changes.filter(change => change.action === "remove").length} to remove. Changes are pending save.</div>}
       </section>
     </div>
+    <section className="mt-6 rounded-2xl border border-red-200 bg-red-50/60 p-5 sm:p-6">
+      <h3 className="font-bold text-red-900">Permanently remove society</h3>
+      <p className="mt-1 text-sm leading-6 text-red-800">This removes the society and its assignments. Societies with event or historical records cannot be deleted; turn off Public visibility to hide one instead.</p>
+      <button type="button" onClick={onDelete} disabled={busy} className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg border border-red-300 bg-white px-4 text-sm font-semibold text-red-800 hover:bg-red-100 disabled:opacity-50"><Trash2 size={16}/>Permanently remove society</button>
+    </section>
     <div className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-slate-500">Save applies the society profile and assignment changes.</p><div className="flex justify-end gap-3"><button type="button" onClick={onCancel} disabled={busy} className="h-11 rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Cancel</button><button type="button" onClick={onSave} disabled={busy} className="inline-flex h-11 min-w-36 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-wait disabled:opacity-60">{busy ? "Saving changes…" : "Save changes"}</button></div></div>
   </section>;
 }

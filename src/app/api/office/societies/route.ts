@@ -18,7 +18,7 @@ async function officeUser() {
 }
 export async function GET() {
   const auth = await officeUser(); if (!auth) return NextResponse.json({ error: "OSSIE access required." }, { status: 403 });
-  const { data, error } = await admin().from("societies").select("*, society_members(id,user_id,role,status,profiles!society_members_user_id_fkey(email,first_name,last_name)), society_patrons(id,user_id,profiles!society_patrons_user_id_fkey(email,first_name,last_name))").order("name");
+  const { data, error } = await admin().from("societies").select("*, society_members(id,user_id,role,status,profiles!society_members_user_id_fkey(email,first_name,last_name,avatar_url)), society_patrons(id,user_id,profiles!society_patrons_user_id_fkey(email,first_name,last_name,avatar_url))").order("name");
   if (error) return NextResponse.json({ error: error.message }, { status: 400 }); return NextResponse.json({ societies: data });
 }
 
@@ -32,6 +32,20 @@ export async function PATCH(request: Request) {
   if (!data) return NextResponse.json({ error: "Society not found." }, { status: 404 });
   return NextResponse.json({ society: data });
 }
+
+export async function DELETE(request: Request) {
+  const auth = await officeUser(); if (!auth) return NextResponse.json({ error: "OSSIE access required." }, { status: 403 });
+  const parsed = z.object({ societyId: z.string().uuid() }).safeParse(await request.json());
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
+  const { data, error } = await admin().from("societies").delete().eq("id", parsed.data.societyId).select("id").maybeSingle();
+  if (error) {
+    if (error.code === "23503") return NextResponse.json({ error: "This society has event or historical records and cannot be permanently removed. Turn off Public visibility to hide it instead." }, { status: 409 });
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+  if (!data) return NextResponse.json({ error: "Society not found." }, { status: 404 });
+  return NextResponse.json({ ok: true });
+}
+
 export async function POST(request: Request) {
   const auth = await officeUser(); if (!auth) return NextResponse.json({ error: "OSSIE access required." }, { status: 403 });
   const social=z.string().url().refine(value=>/^https?:\/\//i.test(value)).optional().or(z.literal(""));

@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Check, KeyRound, LoaderCircle, X } from "lucide-react";
-import { createClient } from "@/lib/supabase/browser";
+import { Check, KeyRound, LoaderCircle } from "lucide-react";
 import { useToast } from "@/components/toast-provider";
 import { GoogleCalendarButton } from "@/components/google-calendar-button";
 import { ImageUpload } from "@/components/image-upload";
@@ -27,38 +27,6 @@ type RegistrationHistoryItem = { id: string; registrationId: string; eventId: st
 
 const field = "mt-1.5 h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-700 focus:ring-4 focus:ring-blue-100";
 
-function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const toast = useToast();
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [busy, setBusy] = useState(false);
-  const close = () => { setPassword(""); setConfirm(""); onClose(); };
-
-  useEffect(() => {
-    const dialog = ref.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
-
-  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (password.length < 10) { toast("Use a password with at least 10 characters.", "error"); return; }
-    if (password !== confirm) { toast("The passwords do not match.", "error"); return; }
-    setBusy(true);
-    const { error } = await createClient().auth.updateUser({ password });
-    setBusy(false);
-    if (error) { toast(error.message, "error"); return; }
-    close(); toast("Password updated successfully.", "success");
-  };
-
-  return <dialog ref={ref} aria-labelledby="password-dialog-title" onClose={close} className="w-[min(32rem,calc(100%-2rem))] rounded-2xl border border-slate-200 bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-950/50">
-    <div className="flex items-start justify-between border-b border-slate-200 p-5 sm:p-6"><div><h2 id="password-dialog-title" className="text-lg font-bold">Change password</h2><p className="mt-1 text-sm text-slate-600">Choose a new password for your RADES account.</p></div><button type="button" onClick={close} aria-label="Close password dialog" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><X size={18}/></button></div>
-    <form onSubmit={submit} className="space-y-4 p-5 sm:p-6"><label className="block text-sm font-semibold">New password<input className={field} type="password" autoComplete="new-password" value={password} onChange={event => setPassword(event.target.value)} minLength={10} required/></label><label className="block text-sm font-semibold">Confirm new password<input className={field} type="password" autoComplete="new-password" value={confirm} onChange={event => setConfirm(event.target.value)} minLength={10} required/></label><div className="flex justify-end gap-3 pt-2"><button type="button" onClick={close} disabled={busy} className="h-10 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button><button type="submit" disabled={busy} className="inline-flex h-10 items-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800 disabled:opacity-60">{busy ? <LoaderCircle size={16} className="animate-spin"/> : <Check size={16}/>}Update password</button></div></form>
-  </dialog>;
-}
-
 export function ProfileEditor({ profile, tickets, history }: { profile: UserProfile; tickets: TicketSummary[]; history: RegistrationHistoryItem[] }) {
   const router = useRouter();
   const toast = useToast();
@@ -67,7 +35,6 @@ export function ProfileEditor({ profile, tickets, history }: { profile: UserProf
   const [lastName, setLastName] = useState(profile.lastName);
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl);
   const [busy, setBusy] = useState(false);
-  const [passwordDialog, setPasswordDialog] = useState(false);
   const initials = `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase() || "R";
   const roles = [
     profile.accountType === "student" ? "Student" : profile.accountType === "faculty" ? "Faculty" : profile.accountType === "developer" ? "Developer" : "Account",
@@ -106,7 +73,7 @@ export function ProfileEditor({ profile, tickets, history }: { profile: UserProf
           <div className="grid gap-3 sm:grid-cols-2"><label className="block text-sm font-semibold">First name<input className={field} value={firstName} onChange={event => setFirstName(event.target.value)} minLength={1} maxLength={60} required/></label><label className="block text-sm font-semibold">Last name<input className={field} value={lastName} onChange={event => setLastName(event.target.value)} minLength={1} maxLength={60} required/></label></div>
           <label htmlFor="profile-phone" className="block text-sm font-semibold">Phone number</label><input id="profile-phone" className={field} type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={event => setPhone(event.target.value)} maxLength={20} placeholder="+923001234567" aria-describedby="phone-hint"/><p id="phone-hint" className="mt-1.5 text-xs text-slate-500">Use international format, for example +923001234567.</p><button type="submit" disabled={busy} className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-wait disabled:opacity-60">{busy ? <LoaderCircle size={16} className="animate-spin"/> : <Check size={16}/>}Save profile details</button>
         </form>
-        <button type="button" onClick={() => setPasswordDialog(true)} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:underline"><KeyRound size={16}/>Change password</button>
+        <Link href="/change-password" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:underline"><KeyRound size={16}/>Change password</Link>
       </section>
       <div className="space-y-6">
       <section aria-labelledby="tickets-title" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><div className="border-b border-slate-200 pb-4"><h2 id="tickets-title" className="text-lg font-bold">Digital tickets</h2><p className="mt-1 text-sm text-slate-600">Each team member has an individual QR pass.</p></div>{tickets.length ? <ul className="mt-4 divide-y divide-slate-100">{tickets.map(ticket => <li key={ticket.id} className="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-0 last:pb-0"><div className="min-w-0"><p className="font-semibold">{ticket.eventTitle}</p><p className="mt-1 text-sm text-slate-600">{ticket.holder} · {new Date(ticket.startsAt).toLocaleDateString("en-PK", { dateStyle: "medium", timeZone: "Asia/Karachi" })} · {ticket.venue}</p></div><a href={`/tickets/${ticket.id}`} className="inline-flex h-10 shrink-0 items-center rounded-lg bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800">View ticket</a></li>)}</ul> : <div className="mt-5 rounded-xl border border-dashed border-slate-300 p-6 text-center"><h3 className="font-semibold">No active tickets</h3><p className="mt-1 text-sm text-slate-500">Confirmed event tickets appear here. Paid tickets appear after payment.</p></div>}</section>
@@ -136,6 +103,5 @@ export function ProfileEditor({ profile, tickets, history }: { profile: UserProf
       </section>
       </div>
     </div>
-    <PasswordDialog open={passwordDialog} onClose={() => setPasswordDialog(false)}/>
   </div>;
 }

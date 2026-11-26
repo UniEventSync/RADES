@@ -56,6 +56,7 @@ export function ProfileEditor({ profile, tickets, history }: { profile: UserProf
       setLastName(body.lastName ?? lastName);
       setPhone(body.phone ?? "");
       setAvatarUrl(body.avatarUrl ?? "");
+      window.dispatchEvent(new CustomEvent("rades-profile-updated", { detail: { avatarUrl: body.avatarUrl ?? "" } }));
       toast("Profile details saved.", "success"); router.refresh();
     } catch { toast("Could not reach RADES. Check your connection and try again.", "error"); }
     finally { setBusy(false); }

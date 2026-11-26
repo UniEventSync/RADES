@@ -14,7 +14,7 @@ export default async function DashboardPage() {
     supabase.from("society_members").select("society_id,user_id,role,status,societies(id,name,slug,description,logo_url)").eq("user_id",user.id).eq("status","active"),
     supabase.from("society_patrons").select("society_id,user_id,societies(id,name,slug,description,logo_url)").eq("user_id",user.id),
     supabase.from("events").select("*, societies(name)").order("starts_at",{ascending:true}),
-    supabase.from("societies").select("id,name,slug,description,logo_url,society_members(id,user_id,role,status,profiles!society_members_user_id_fkey(email,first_name,last_name)),society_patrons(id,user_id,profiles!society_patrons_user_id_fkey(email,first_name,last_name))")
+    supabase.from("societies").select("id,name,slug,description,logo_url,society_members(id,user_id,role,status,profiles!society_members_user_id_fkey(email,first_name,last_name,avatar_url)),society_patrons(id,user_id,profiles!society_patrons_user_id_fkey(email,first_name,last_name,avatar_url))")
   ]);
   type SocietyRef = Pick<Society, "id" | "name" | "slug" | "description" | "logo_url">;
   type MembershipRow = { role: string; societies: SocietyRef | null };

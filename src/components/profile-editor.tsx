@@ -36,12 +36,12 @@ export function ProfileEditor({ profile, tickets, history }: { profile: UserProf
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl);
   const [busy, setBusy] = useState(false);
   const initials = `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase() || "R";
-  const roles = [
+  const roles = Array.from(new Set([
     profile.accountType === "student" ? "Student" : profile.accountType === "faculty" ? "Faculty" : profile.accountType === "developer" ? "Developer" : "Account",
     profile.globalRole === "office" ? "OSSIE" : profile.globalRole === "super_admin" ? "Developer" : null,
     profile.isSocietyAdmin ? "Society admin" : null,
     profile.isPatron ? "Society patron" : null,
-  ].filter((role): role is string => Boolean(role));
+  ].filter((role): role is string => Boolean(role))));
 
   const save = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

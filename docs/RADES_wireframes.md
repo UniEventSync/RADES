@@ -51,7 +51,8 @@ Event-specific captures use two events created during this review and then appro
 | Page | Route | Visual capture |
 | --- | --- | --- |
 | Regular student dashboard | `/dashboard` | [Open capture](wireframes/live/student-dashboard.png) |
-| Student profile and registration history | `/profile` | [Open capture](wireframes/live/profile-student.png) |
+| Profile and registration history | `/profile` | [Open capture](wireframes/live/profile-student.png) |
+| Edit profile details | `/profile/edit` | Separate settings page linked from the profile summary |
 | Digital event ticket and QR pass | `/tickets/[id]` | [Open capture](wireframes/live/ticket-detail.png) |
 | Checkout success return | `/checkout/success` | [Open capture](wireframes/live/checkout-success.png) |
 | Checkout cancellation return | `/checkout/cancel` | [Open capture](wireframes/live/checkout-cancel.png) |
@@ -878,16 +879,14 @@ desktop view
 | | [X] Student Name            |  | Digital tickets                               |    |
 | | testing.user.12345@khi.iba.edu.pk | Each team member has an individual QR pass.  |  |
 | | Student                     |  | RADES Wireframe Evidence - Solo              |     |
-| | IBA email                   |  | Student Name - 12-Dec-2026 - Student Center  |     |
+| | Email                       |  | Student Name - 12-Dec-2026 - Student Center  |     |
 | | Student ID: 12345           |  | [ View ticket ]                               |    |
-| | Profile photo [ Image ]     |  +-----------------------------------------------+    |
-| | First name [ Testing ]      |                                                       |
-| | Last name  [ User ]         |  +-----------------------------------------------+    |
-| | Phone number                |  | Registration and participation history       |     |
-| | [ +92XXXXXXXXXX__________ ] |  | Event registrations, payment, cancellations...|    |
-| | [ Save profile details ]    |  | RADES Wireframe Evidence - Solo [Upcoming]   |     |
-| | Change password             |  | 12-Dec-2026 - Student Center - Individual    |     |
-| +-----------------------------+  | [ View ticket ] [ + Google Calendar ]         |    |
+| | Phone: +92XXXXXXXXXX        |  +-----------------------------------------------+    |
+| | [ Edit profile ]            |  | Registration and participation history       |     |
+| +-----------------------------+  | Event registrations, payment, cancellations...|    |
+|                                  | RADES Wireframe Evidence - Solo [Upcoming]   |     |
+|                                  | 12-Dec-2026 - Student Center - Individual    |     |
+|                                  | [ View ticket ] [ + Google Calendar ]         |    |
 |                                  +-----------------------------------------------+    |
 +---------------------------------------------------------------------------------------+
 |[X] RADES - IBA Karachi     EXPLORE     STUDENT SOCIETIES OFFICE                       |
@@ -896,7 +895,13 @@ desktop view
 +---------------------------------------------------------------------------------------+
 ```
 
-Regions: Header, account heading, profile form, digital ticket card, registration history, footer. Purpose: Manage contact details and view event tickets and registration history.
+Regions: Header, account heading, read-only profile summary, digital ticket card, registration history, footer. Purpose: View account contact details and event activity; the Edit profile button opens `/profile/edit` for changes. Student ID is shown only for student accounts.
+
+## Edit profile
+
+Route: `/profile/edit`
+
+The separate profile settings page contains the profile image, first and last name, phone number, Save changes, and Change password controls. The profile summary displays the account email and phone number. Non-student accounts do not show a Student ID row.
 
 ## Solo event registration
 

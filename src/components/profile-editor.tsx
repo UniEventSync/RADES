@@ -21,13 +21,14 @@ type UserProfile = {
   isSocietyAdmin: boolean;
   isPatron: boolean;
   avatarUrl: string;
+  societyAffiliations?: Array<{ name: string; role: string }>;
 };
 type TicketSummary = { id: string; eventTitle: string; startsAt: string; venue: string; holder: string };
 type RegistrationHistoryItem = { id: string; registrationId: string; eventId: string; title: string; description: string; startsAt: string; endsAt: string; venue: string; status: string; paymentStatus: string | null; checkedInAt: string | null; ticketId: string | null; calendarEligible: boolean; feedbackAvailable: boolean; teamName: string | null; amountPkr: number; isLeader: boolean };
 
 const field = "mt-1.5 h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-700 focus:ring-4 focus:ring-blue-100";
 
-export function ProfileEditor({ profile, tickets, history }: { profile: UserProfile; tickets: TicketSummary[]; history: RegistrationHistoryItem[] }) {
+export function ProfileEditor({ profile, tickets, history, editMode = false }: { profile: UserProfile; tickets: TicketSummary[]; history: RegistrationHistoryItem[]; editMode?: boolean }) {
   const router = useRouter();
   const toast = useToast();
   const [phone, setPhone] = useState(profile.phone);
@@ -56,25 +57,34 @@ export function ProfileEditor({ profile, tickets, history }: { profile: UserProf
       setLastName(body.lastName ?? lastName);
       setPhone(body.phone ?? "");
       setAvatarUrl(body.avatarUrl ?? "");
-      window.dispatchEvent(new CustomEvent("rades-profile-updated", { detail: { avatarUrl: body.avatarUrl ?? "" } }));
+      window.dispatchEvent(new CustomEvent("rades-profile-updated", { detail: { avatarUrl: body.avatarUrl ?? "", firstName: body.firstName ?? firstName, lastName: body.lastName ?? lastName } }));
       toast("Profile details saved.", "success"); router.refresh();
     } catch { toast("Could not reach RADES. Check your connection and try again.", "error"); }
     finally { setBusy(false); }
   };
 
+  if (editMode) return <div className="mx-auto max-w-3xl px-5 py-8 sm:px-8 sm:py-10">
+    <Link href="/profile" className="text-sm font-semibold text-blue-700 hover:underline">← Back to profile</Link>
+    <div className="mb-6 mt-5"><p className="text-sm font-semibold text-blue-700">Account settings</p><h1 className="mt-1 text-3xl font-bold tracking-tight">Edit profile</h1><p className="mt-2 text-sm text-slate-600">Update your name, photo, and phone number here. Use Change password below to update your password.</p></div>
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <form onSubmit={save} className="space-y-4">
+        <ImageUpload kind="profile-avatars" entityId={profile.id} value={avatarUrl} onChange={setAvatarUrl}/>
+        <div className="grid gap-3 sm:grid-cols-2"><label className="block text-sm font-semibold">First name<input className={field} value={firstName} onChange={event => setFirstName(event.target.value)} minLength={1} maxLength={60} required/></label><label className="block text-sm font-semibold">Last name<input className={field} value={lastName} onChange={event => setLastName(event.target.value)} minLength={1} maxLength={60} required/></label></div>
+        <label htmlFor="profile-phone" className="block text-sm font-semibold">Phone number<input id="profile-phone" className={field} type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={event => setPhone(event.target.value)} maxLength={20} placeholder="+923001234567" aria-describedby="phone-hint"/></label><p id="phone-hint" className="-mt-3 text-xs text-slate-500">Use international format, for example +923001234567.</p>
+        <div className="flex flex-wrap gap-3"><button type="submit" disabled={busy} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-wait disabled:opacity-60">{busy ? <LoaderCircle size={16} className="animate-spin"/> : <Check size={16}/>}Save changes</button><Link href="/change-password" className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-300 px-4 text-sm font-semibold"><KeyRound size={16}/>Change password</Link></div>
+      </form>
+    </section>
+  </div>;
+
   return <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-10">
-    <div className="mb-6"><p className="text-sm font-semibold text-blue-700">Your account</p><h1 className="mt-1 text-3xl font-bold tracking-tight">Profile</h1><p className="mt-2 text-sm text-slate-600">Manage your contact details and view your RADES activity.</p></div>
+    <div className="mb-6"><p className="text-sm font-semibold text-blue-700">Your account</p><h1 className="mt-1 text-3xl font-bold tracking-tight">Your profile</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Review your contact details, society roles, tickets, and event history. Choose Edit profile to update your details or password.</p></div>
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(280px,.8fr)_minmax(0,1.5fr)]">
       <section aria-labelledby="profile-card-title" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex items-center gap-4"><div aria-hidden="true" className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-xl font-bold text-blue-900">{avatarUrl ? <Image src={avatarUrl} alt="" fill unoptimized sizes="64px" className="object-cover"/> : initials}</div><div className="min-w-0"><h2 id="profile-card-title" className="truncate text-xl font-bold">{firstName} {lastName}</h2><p className="truncate text-sm text-slate-600">{profile.email}</p></div></div>
         <div className="mt-5 flex flex-wrap gap-2">{roles.map(role => <span key={role} className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-800">{role}</span>)}</div>
-        <dl className="mt-5 space-y-3 border-t border-slate-100 pt-5 text-sm"><div className="flex justify-between gap-4"><dt className="text-slate-500">IBA email</dt><dd className="truncate font-medium" title={profile.email}>{profile.email}</dd></div><div className="flex justify-between gap-4"><dt className="text-slate-500">Student ID</dt><dd className="font-medium">{profile.erpNumber ?? (profile.accountType === "student" ? "Unavailable" : "Not applicable")}</dd></div></dl>
-        <form onSubmit={save} className="mt-5 border-t border-slate-100 pt-5 space-y-4">
-          <ImageUpload kind="profile-avatars" entityId={profile.id} value={avatarUrl} onChange={setAvatarUrl}/>
-          <div className="grid gap-3 sm:grid-cols-2"><label className="block text-sm font-semibold">First name<input className={field} value={firstName} onChange={event => setFirstName(event.target.value)} minLength={1} maxLength={60} required/></label><label className="block text-sm font-semibold">Last name<input className={field} value={lastName} onChange={event => setLastName(event.target.value)} minLength={1} maxLength={60} required/></label></div>
-          <label htmlFor="profile-phone" className="block text-sm font-semibold">Phone number</label><input id="profile-phone" className={field} type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={event => setPhone(event.target.value)} maxLength={20} placeholder="+923001234567" aria-describedby="phone-hint"/><p id="phone-hint" className="mt-1.5 text-xs text-slate-500">Use international format, for example +923001234567.</p><button type="submit" disabled={busy} className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-wait disabled:opacity-60">{busy ? <LoaderCircle size={16} className="animate-spin"/> : <Check size={16}/>}Save profile details</button>
-        </form>
-        <Link href="/change-password" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:underline"><KeyRound size={16}/>Change password</Link>
+        {profile.societyAffiliations?.length ? <div className="mt-4 border-t border-slate-100 pt-4"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Society affiliations</p><ul className="mt-2 flex flex-wrap gap-2">{profile.societyAffiliations.map((item, index) => <li key={`${item.name}-${item.role}-${index}`} className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-700"><span>{item.name}</span><span className="ml-1.5 text-slate-500">{item.role}</span></li>)}</ul></div> : null}
+        <dl className="mt-5 space-y-3 border-t border-slate-100 pt-5 text-sm"><div className="flex justify-between gap-4"><dt className="text-slate-500">Email</dt><dd className="truncate font-medium" title={profile.email}>{profile.email}</dd></div>{profile.accountType === "student" && <div className="flex justify-between gap-4"><dt className="text-slate-500">Student ID</dt><dd className="font-medium">{profile.erpNumber ?? "Unavailable"}</dd></div>}<div className="flex justify-between gap-4"><dt className="text-slate-500">Phone number</dt><dd className="font-medium">{profile.phone || "Not added"}</dd></div></dl>
+        <Link href="/profile/edit" className="mt-5 inline-flex h-10 items-center rounded-lg bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800">Edit profile</Link>
       </section>
       <div className="space-y-6">
       <section aria-labelledby="tickets-title" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><div className="border-b border-slate-200 pb-4"><h2 id="tickets-title" className="text-lg font-bold">Digital tickets</h2><p className="mt-1 text-sm text-slate-600">Each team member has an individual QR pass.</p></div>{tickets.length ? <ul className="mt-4 divide-y divide-slate-100">{tickets.map(ticket => <li key={ticket.id} className="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-0 last:pb-0"><div className="min-w-0"><p className="font-semibold">{ticket.eventTitle}</p><p className="mt-1 text-sm text-slate-600">{ticket.holder} · {new Date(ticket.startsAt).toLocaleDateString("en-PK", { dateStyle: "medium", timeZone: "Asia/Karachi" })} · {ticket.venue}</p></div><a href={`/tickets/${ticket.id}`} className="inline-flex h-10 shrink-0 items-center rounded-lg bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800">View ticket</a></li>)}</ul> : <div className="mt-5 rounded-xl border border-dashed border-slate-300 p-6 text-center"><h3 className="font-semibold">No active tickets</h3><p className="mt-1 text-sm text-slate-500">Confirmed event tickets appear here. Paid tickets appear after payment.</p></div>}</section>

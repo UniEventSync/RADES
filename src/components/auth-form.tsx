@@ -16,7 +16,7 @@ export function AuthForm({ mode, initialEmail = "", nextPath }: { mode: Mode; in
   const router = useRouter();
   const toast = useToast();
   const [email, setEmail] = useState(initialEmail); const [fullName, setFullName] = useState(""); const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState(""); const [confirm, setConfirm] = useState(""); const [otp, setOtp] = useState("");
+  const [password, setPassword] = useState(""); const [confirm, setConfirm] = useState(""); const [currentPassword, setCurrentPassword] = useState(""); const [otp, setOtp] = useState("");
   const [showPassword, setShowPassword] = useState(false); const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [notice, setNotice] = useState("");
   useEffect(() => { if (error) toast(error, "error"); }, [error, toast]);
   useEffect(() => { if (notice) toast(notice, "success"); }, [notice, toast]);
@@ -53,8 +53,13 @@ export function AuthForm({ mode, initialEmail = "", nextPath }: { mode: Mode; in
       }
       if (mode === "verify") { setNotice("Open the confirmation link in your inbox. It will verify your email and sign you in."); setBusy(false); return; }
       if (mode === "change") {
+        if (!currentPassword) return setResult("Enter your current password to continue.");
         if (password.length < 10) return setResult("Use a password with at least 10 characters.");
         if (password !== confirm) return setResult("The passwords do not match.");
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user?.email) return setResult("Sign in again before changing your password.");
+        const { error: reauthError } = await supabase.auth.signInWithPassword({ email: user.email, password: currentPassword });
+        if (reauthError) return setResult("Your current password is incorrect.");
         const { error: updateError } = await supabase.auth.updateUser({ password });
         if (updateError) return setResult(updateError.message);
         setNotice("Password updated successfully.");
@@ -88,8 +93,13 @@ export function AuthForm({ mode, initialEmail = "", nextPath }: { mode: Mode; in
         <label className="block text-sm font-semibold">IBA Email<input className={field} type="email" autoComplete="email" value={email} onChange={e=>onEmail(e.target.value)} required placeholder="name@khi.iba.edu.pk"/><span className="mt-1 block text-xs font-normal text-slate-500">Students: firstname.secondname.ERP@khi.iba.edu.pk · Faculty: name@iba.edu.pk</span>{accountType&&<span className="mt-1 block text-xs font-semibold text-blue-700">{accountType === "student" ? "Student account" : "Faculty account"}</span>}</label>
       </>}
       {identityMode && mode !== "signup" && <label className="block text-sm font-semibold">IBA Email<input className={field} type="email" autoComplete="email" value={email} onChange={e=>onEmail(e.target.value)} required/></label>}
-      {(mode === "signin" || mode === "signup" || mode === "reset" || mode === "change") && <div className={mode === "signup" ? "grid gap-4 sm:grid-cols-2" : ""}><label className="block text-sm font-semibold">{mode === "reset" || mode === "change" ? "New Password" : "Password"}<span className="relative block"><input className={`${field} pr-12`} type={showPassword?"text":"password"} autoComplete={mode==="signin"?"current-password":"new-password"} value={password} onChange={e=>setPassword(e.target.value)} required minLength={10}/><button type="button" aria-label={showPassword?"Hide password":"Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" onClick={()=>setShowPassword(!showPassword)}>{showPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></span></label>
-        {(mode === "signup" || mode === "reset" || mode === "change") && <label className="block text-sm font-semibold">Confirm Password<input className={field} type="password" autoComplete="new-password" value={confirm} onChange={e=>setConfirm(e.target.value)} required minLength={10}/></label>}</div>}
+      {mode === "change" && <div className="space-y-4">
+        <label className="block text-sm font-semibold">Current password<input className={field} type="password" autoComplete="current-password" value={currentPassword} onChange={e=>setCurrentPassword(e.target.value)} required/></label>
+        <label className="block text-sm font-semibold">New Password<span className="relative block"><input className={`${field} pr-12`} type={showPassword?"text":"password"} autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} required minLength={10}/><button type="button" aria-label={showPassword?"Hide new password":"Show new password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" onClick={()=>setShowPassword(!showPassword)}>{showPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></span></label>
+        <label className="block text-sm font-semibold">Confirm Password<input className={field} type="password" autoComplete="new-password" value={confirm} onChange={e=>setConfirm(e.target.value)} required minLength={10}/></label>
+      </div>}
+      {(mode === "signin" || mode === "signup" || mode === "reset") && <div className={mode === "signup" ? "grid gap-4 sm:grid-cols-2" : ""}><label className="block text-sm font-semibold">{mode === "reset" ? "New Password" : "Password"}<span className="relative block"><input className={`${field} pr-12`} type={showPassword?"text":"password"} autoComplete={mode==="signin"?"current-password":"new-password"} value={password} onChange={e=>setPassword(e.target.value)} required minLength={10}/><button type="button" aria-label={showPassword?"Hide password":"Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" onClick={()=>setShowPassword(!showPassword)}>{showPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></span></label>
+        {(mode === "signup" || mode === "reset") && <label className="block text-sm font-semibold">Confirm Password<input className={field} type="password" autoComplete="new-password" value={confirm} onChange={e=>setConfirm(e.target.value)} required minLength={10}/></label>}</div>}
       {mode === "signup" && <div className="grid gap-4 sm:grid-cols-2"><label className="block text-sm font-semibold">ERP / Student ID<input className={`${field} bg-slate-50`} value={identity?.erpNumber ?? ""} readOnly placeholder="Auto-filled from student email"/><span className="mt-1 block text-xs font-normal text-slate-500">Derived from a valid student email.</span></label><label className="block text-sm font-semibold">Phone Number <span className="font-normal text-slate-500">(optional)</span><input className={field} type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+923001234567"/><span className="mt-1 block text-xs font-normal text-slate-500">Use international format, for example +923001234567.</span></label></div>}
       {(mode === "verify" || mode === "reset") && mode === "reset" && <label className="block text-sm font-semibold">Email<input className={field} type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label>}
       {mode === "reset" && <label className="block text-sm font-semibold">Recovery code (6-8 digits)<input className={`${field} tracking-[.35em]`} inputMode="numeric" maxLength={8} value={otp} onChange={e=>setOtp(e.target.value.replace(/\D/g,""))} required/></label>}

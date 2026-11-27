@@ -8,10 +8,12 @@ export default async function ProfilePage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/sign-in?next=/profile");
 
-  const [{ data: profile }, { count: adminCount }, { count: patronCount }] = await Promise.all([
+  const [{ data: profile }, { count: adminCount }, { count: patronCount }, { data: adminSocieties }, { data: patronSocieties }] = await Promise.all([
     supabase.from("profiles").select("first_name,last_name,email,erp_number,account_type,global_role,phone,avatar_url").eq("id", user.id).maybeSingle(),
     supabase.from("society_members").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "active"),
     supabase.from("society_patrons").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+    supabase.from("society_members").select("societies(name)").eq("user_id", user.id).eq("status", "active"),
+    supabase.from("society_patrons").select("societies(name)").eq("user_id", user.id),
   ]);
   if (!profile) redirect("/");
 
@@ -43,6 +45,10 @@ export default async function ProfilePage() {
     return [{ id: member.id, registrationId: member.registration_id, eventId: event.id, title: event.title, description: event.description, startsAt: event.starts_at, endsAt: event.ends_at, venue: event.venue, status, paymentStatus: paymentsByRegistration.get(member.registration_id) ?? null, checkedInAt, ticketId, calendarEligible: Boolean(ticketId && Date.parse(event.ends_at) > now), feedbackAvailable: Boolean(checkedInAt && registration.status === "confirmed" && event.status !== "cancelled" && Date.parse(event.ends_at) <= now), teamName: registration.team_name, amountPkr: registration.amount_pkr, isLeader: member.is_leader }];
   });
   const tickets = history.filter(item => item.ticketId).map(item => ({ id: item.ticketId!, eventTitle: item.title, startsAt: item.startsAt, venue: item.venue, holder: profile.first_name + " " + profile.last_name }));
+  const societyAffiliations = [
+    ...(adminSocieties ?? []).flatMap(row => row.societies?.[0]?.name ? [{ name: row.societies[0].name, role: "Admin" }] : []),
+    ...(patronSocieties ?? []).flatMap(row => row.societies?.[0]?.name ? [{ name: row.societies[0].name, role: "Patron" }] : []),
+  ];
 
   return <ProfileEditor profile={{
     id: user.id,
@@ -56,5 +62,6 @@ export default async function ProfilePage() {
     avatarUrl: profile.avatar_url ?? "",
     isSocietyAdmin: (adminCount ?? 0) > 0,
     isPatron: (patronCount ?? 0) > 0,
+    societyAffiliations,
   }} tickets={tickets} history={history} />;
 }

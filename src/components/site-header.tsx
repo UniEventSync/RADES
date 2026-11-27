@@ -57,7 +57,7 @@ export function SiteHeader() {
   const eventDetailsPage = pathname.startsWith("/events/");
   const office = role === "office" || role === "super_admin";
   const accountLabel = displayName || email?.split("@")[0] || "Account";
-  const links = <>{email && <Link href="/" onClick={() => setOpen(false)}>Home</Link>}<Link href="/events" onClick={() => setOpen(false)}>Explore Events</Link><Link href="/societies" onClick={() => setOpen(false)}>Explore Societies</Link>{email && office && <Link href="/dashboard" onClick={() => setOpen(false)}>OSSIE workspace</Link>}{email && hasSocietyAdminAccess && <Link href="/admin" onClick={() => setOpen(false)}>Society Workspace</Link>}{email && !office && !hasSocietyAdminAccess && hasSocietyPatronAccess && <Link href="/dashboard" onClick={() => setOpen(false)}>Faculty Workspace</Link>}</>;
+  const links = <>{email && <Link href="/" onClick={() => setOpen(false)}>Home</Link>}<Link href="/events" onClick={() => setOpen(false)}>Explore Events</Link><Link href="/societies" onClick={() => setOpen(false)}>Explore Societies</Link>{email && office && <Link href="/dashboard" onClick={() => setOpen(false)}>Workspace</Link>}{email && hasSocietyAdminAccess && <Link href="/admin" onClick={() => setOpen(false)}>Workspace</Link>}{email && !office && !hasSocietyAdminAccess && hasSocietyPatronAccess && <Link href="/dashboard" onClick={() => setOpen(false)}>Workspace</Link>}</>;
   if (adminPage) return null;
   return <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
     <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8">

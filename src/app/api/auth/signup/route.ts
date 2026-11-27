@@ -5,8 +5,12 @@ import { deriveStudentIdentity, emailSchema, getAccountType } from "@/lib/auth/e
 import { z } from "zod";
 const bodySchema = z.object({ email: z.string(), password: z.string().min(10).max(128), firstName: z.string().trim().min(1).max(60), lastName: z.string().trim().min(1).max(60), phone: z.string().trim().max(20).refine(value => !value || /^\+[1-9]\d{7,14}$/.test(value), "Enter a phone number in international format.").optional().default(""), accountType: z.enum(["student", "faculty"]).optional() });
 export async function POST(request: Request) {
+  let body: unknown;
+  try { body = await request.json(); }
+  catch { return NextResponse.json({ error: "Enter valid JSON." }, { status: 400 }); }
+
   try {
-    const parsed = bodySchema.safeParse(await request.json());
+    const parsed = bodySchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid signup details." }, { status: 400 });
     const email = parsed.data.email.trim().toLowerCase();
     if (email === process.env.OSSIE_EMAIL?.trim().toLowerCase()) return NextResponse.json({ error: "This address is reserved for the RADES OSSIE account." }, { status: 400 });

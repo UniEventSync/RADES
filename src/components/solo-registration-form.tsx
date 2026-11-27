@@ -6,7 +6,7 @@ import { CalendarDays, Check, LoaderCircle, MapPin } from "lucide-react";
 import type { EventItem } from "@/lib/events/demo";
 
 type Conflict = { id: string; title: string; starts_at: string; ends_at: string };
-export type RegistrationPreflight = { isStudent: boolean; isOpen: boolean; alreadyRegistered: boolean; availableSeats: number | null; scheduleConflicts: Conflict[]; registrationType: string };
+export type RegistrationPreflight = { isStudent: boolean; isSocietyMember?: boolean; isOpen: boolean; alreadyRegistered: boolean; availableSeats: number | null; scheduleConflicts: Conflict[]; registrationType: string };
 type Profile = { firstName: string; lastName: string; email: string; erpNumber: string | null; phone: string };
 const field = "mt-1.5 h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-700 focus:ring-4 focus:ring-blue-100";
 const pkt = { timeZone: "Asia/Karachi" } as const;

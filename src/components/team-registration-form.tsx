@@ -5,29 +5,25 @@ import Link from "next/link";
 import { CalendarDays, Check, LoaderCircle, MapPin, Plus, Trash2 } from "lucide-react";
 import type { EventItem } from "@/lib/events/demo";
 import type { RegistrationPreflight } from "@/components/solo-registration-form";
+import { STUDENT_EMAIL } from "@/lib/auth/email-rules";
 
 type Profile = { firstName: string; lastName: string; email: string; phone: string };
 type Teammate = { email: string; state: "idle" | "checking" | "valid" | "invalid"; message?: string };
 const field = "mt-1.5 h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-700 focus:ring-4 focus:ring-blue-100";
 const pkt = { timeZone: "Asia/Karachi" } as const;
 
-function TeammateField({ eventId, index, member, onChange, onLookup, onRemove, canRemove }: { eventId: string; index: number; member: Teammate; onChange: (value: string) => void; onLookup: (email: string, result: { valid: boolean; message?: string }) => void; onRemove: () => void; canRemove: boolean }) {
+function TeammateField({ index, member, onChange, onLookup, onRemove, canRemove }: { index: number; member: Teammate; onChange: (value: string) => void; onLookup: (email: string, result: { valid: boolean; message?: string }) => void; onRemove: () => void; canRemove: boolean }) {
   useEffect(() => {
     const email = member.email.trim().toLowerCase();
     if (!email) return;
     let active = true;
-    const timer = window.setTimeout(async () => {
-      try {
-        const response = await fetch(`/api/events/${eventId}/register-team/lookup`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) });
-        const body = await response.json();
-        if (!active) return;
-        onLookup(email, { valid: response.ok, message: body.error });
-      } catch {
-        if (active) onLookup(email, { valid: false, message: "Could not verify this email right now." });
-      }
-    }, 450);
+    const timer = window.setTimeout(() => {
+      if (!active) return;
+      const valid = STUDENT_EMAIL.test(email);
+      onLookup(email, { valid, message: valid ? undefined : "Use a valid IBA student email address." });
+    }, 250);
     return () => { active = false; window.clearTimeout(timer); };
-  }, [eventId, member.email, onChange, onLookup]);
+  }, [member.email, onLookup]);
 
   return <div className="rounded-xl border border-slate-200 p-3">
     <div className="flex items-end gap-2"><label className="min-w-0 flex-1 text-sm font-semibold" htmlFor={`member-${index}`}>Member {index + 2} Institutional Email{index + 2 > 2 && <span className="font-normal text-slate-500"> (optional until minimum is met)</span>}<input id={`member-${index}`} className={field} type="email" inputMode="email" autoComplete="off" value={member.email} maxLength={254} onChange={event => onChange(event.target.value)} placeholder="name.surname.12345@khi.iba.edu.pk" aria-describedby={`member-status-${index}`}/></label>{canRemove && <button type="button" onClick={onRemove} aria-label={`Remove member ${index + 2}`} className="mb-0.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100"><Trash2 size={17}/></button>}</div>
@@ -96,7 +92,7 @@ export function TeamRegistrationForm({ event, profile, preflight }: { event: Eve
     {!preflight ? <p role="alert" className="mt-5 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">Registration status could not be checked. Refresh this page to try again.</p> : alreadyRegistered ? <div role="status" className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4"><h3 className="font-semibold text-blue-950">You are already registered</h3><p className="mt-1 text-sm text-blue-900">You cannot register again or join another team for this event.</p><Link href="/profile" className="mt-3 inline-block text-sm font-semibold text-blue-800 underline">View profile</Link></div> : conflicts.length > 0 ? <div role="alert" className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950"><h3 className="font-semibold">Schedule conflict</h3><p className="mt-1 text-sm">You have an overlapping registration: {conflicts.map(conflict => <Link key={conflict.id} href={`/events/${conflict.id}`} className="font-semibold underline">{conflict.title}</Link>)}. Only the leader’s schedule is shown here; teammate conflicts are checked when saving.</p></div> : isFull ? <p role="status" className="mt-5 rounded-xl border border-slate-300 bg-slate-50 p-4 text-sm font-semibold text-slate-700">This event is sold out.</p> : isClosed ? <p role="status" className="mt-5 rounded-xl border border-slate-300 bg-slate-50 p-4 text-sm font-semibold text-slate-700">Registration for this event is closed.</p> : <form onSubmit={submit} className="mt-5 space-y-5">
       <div><label className="block text-sm font-semibold" htmlFor="team-name">Team Name</label><input id="team-name" className={field} value={teamName} onChange={event => setTeamName(event.target.value)} minLength={2} maxLength={60} required placeholder="Code Ninjas"/><p className="mt-1 text-xs text-slate-500">2–60 characters.</p></div>
       <div className="rounded-xl bg-slate-50 p-3"><p className="text-sm font-semibold">Team Leader (You)</p><p className="mt-1 text-sm text-slate-700">{profile.firstName} {profile.lastName} ({profile.email})</p></div>
-      <div className="space-y-3"><h3 className="text-sm font-semibold">Teammates</h3>{members.map((member, index) => <TeammateField key={index} eventId={event.id} index={index} member={member} onChange={value => changeMember(index, value)} onLookup={applyLookup} onRemove={() => setMembers(current => current.filter((_, item) => item !== index))} canRemove={members.length > min - 1}/>)}</div>
+      <div className="space-y-3"><h3 className="text-sm font-semibold">Teammates</h3>{members.map((member, index) => <TeammateField key={index} index={index} member={member} onChange={value => changeMember(index, value)} onLookup={applyLookup} onRemove={() => setMembers(current => current.filter((_, item) => item !== index))} canRemove={members.length > min - 1}/>)}</div>
       {canAdd && <button type="button" onClick={() => setMembers(current => [...current, { email: "", state: "idle" }])} className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-300 px-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"><Plus size={16}/>Add teammate</button>}
       <label className="block text-sm font-semibold">Contact Number for Venue Updates <span className="font-normal text-slate-500">(optional)</span><input className={field} type="tel" inputMode="tel" autoComplete="tel" value={phone} maxLength={20} onChange={event => setPhone(event.target.value)} placeholder="+923001234567"/><span className="mt-1.5 block text-xs font-normal text-slate-500">Use international format, for example +923001234567.</span></label>
       <label className="flex items-start gap-3 rounded-xl border border-slate-200 p-3 text-sm"><input type="checkbox" className="mt-0.5 h-4 w-4 accent-blue-700" checked={confirmedSchedule} onChange={event => setConfirmedSchedule(event.target.checked)} required/><span>I checked the team’s schedule. Teammates must not have another registered event at the same time.</span></label>

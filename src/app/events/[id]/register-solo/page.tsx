@@ -20,6 +20,7 @@ export default async function SoloRegistrationPage({ params }: { params: Promise
   if (event.registration_type === "team") redirect(`/events/${id}/register-team`);
   const { data: preflightData, error } = await supabase.rpc("get_registration_preflight", { p_event_id: id });
   const preflight = error ? null : preflightData as RegistrationPreflight;
+  if (preflight?.isSocietyMember && !preflight.alreadyRegistered) return <main className="mx-auto max-w-3xl px-5 py-10"><Link href={`/events/${id}`} className="text-sm font-semibold text-blue-700 hover:underline">← Back to event</Link><section role="status" className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-950"><h1 className="text-xl font-bold">Society member registration unavailable</h1><p className="mt-2 text-sm">Active student members cannot register for events hosted by their own society.</p></section></main>;
 
   return <main className="mx-auto max-w-3xl px-5 py-8 sm:py-10">
     <Link href={`/events/${id}`} className="text-sm font-semibold text-blue-700 hover:underline">← Back to event details</Link>

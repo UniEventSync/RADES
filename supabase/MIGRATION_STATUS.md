@@ -38,5 +38,6 @@ Statuses below are based on user reports, not a direct query against Supabase. T
 | `202611250001_public_visibility_on_approval.sql` | Reported applied | User confirmed application in Supabase on 2026-11-25. |
 | `202611250002_event_registration_edit_guard.sql` | Not yet reported applied | Prevents lowering capacity below active seats or changing registration type/price while registrations or payment holds remain. |
 | `202611250003_event_check_in_window.sql` | Not yet reported applied | Restricts new ticket check-ins to the event's start/end time window. |
+| `202611270001_society_member_event_registration_guard.sql` | Reported applied | User confirmed application in Supabase on 2026-11-27. Adds an own-society event registration block for active student society admins, enforced during member insertion, and reports the logged-in student's eligibility in registration preflight. |
 
 Do not rerun migrations already applied. The project owner reported all repository migrations applied on 2026-11-20; the remote schema was not independently queried.
